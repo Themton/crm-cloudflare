@@ -628,7 +628,6 @@ function injectPrevMonthBtn(){
         var prevYM=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
         var monthInput=document.querySelector("input[type='month']");
         if(monthInput){
-          // React props method
           try{
             var pk=Object.keys(monthInput).find(function(k){return k.startsWith("__reactProps");});
             if(pk&&monthInput[pk]&&monthInput[pk].onChange){
@@ -636,18 +635,28 @@ function injectPrevMonthBtn(){
               monthInput[pk].onChange({target:monthInput});
             }
           }catch(e){}
-          // Native fallback
           var nativeSet=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set;
           nativeSet.call(monthInput,prevYM);
           monthInput.dispatchEvent(new Event("input",{bubbles:true}));
           monthInput.dispatchEvent(new Event("change",{bubbles:true}));
         }
-        // Style active
+        // Deactivate ALL buttons, activate only this one
+        filterBar.querySelectorAll("button").forEach(function(b){
+          b.style.border="1px solid #e2e8f0";b.style.background="#fff";b.style.color="#64748b";
+        });
         btn.style.border="2px solid #d97706";
         btn.style.background="#fef3c7";
         btn.style.color="#92400e";
       },200);
     };
+
+    // Listen: deactivate "เดือนก่อน" when other filter is clicked
+    filterBar.addEventListener("click",function(e){
+      var clicked=e.target.closest("button");
+      if(clicked&&clicked!==btn){
+        btn.style.border="1px solid #e2e8f0";btn.style.background="#fff";btn.style.color="#64748b";
+      }
+    });
 
     // Insert after "เมื่อวาน" or "7 วัน"
     var sevenBtn=null;
