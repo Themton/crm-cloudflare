@@ -582,7 +582,7 @@ function enhanceParcelStats(){
       }
     }
 
-    // Fix ยอด COD — recalculate from ALL parcels via API
+    // Fix ยอด COD — ดึงจาก orders table filter by account_email (เหมือนหน้ารายงาน)
     if(!codCard)return;
     var sig=codCard.textContent;
     if(_parcelFixDone[sig])return;
@@ -592,17 +592,14 @@ function enhanceParcelStats(){
     var _user=null;
     try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
     var isAdmin=_user&&_user.role==="admin";
-    var myName="";
-    if(_user&&!isAdmin){
-      myName=(typeof extractNickname==="function")?extractNickname(_user.displayName,_user.nickname):(_user.nickname||_user.displayName||"");
-    }
+    var myEmail=(_user&&_user.username)||"";
 
-    // Fetch parcels (filter by telesale if not admin)
+    // Fetch from orders (same source as report page) filter by account_email
     (async function(){
       try{
         var all=[];var page=0;var size=1000;
-        var qry="parcel_checks?select=cod,date,flash_status&order=created_at.desc";
-        if(myName)qry+="&telesale=eq."+encodeURIComponent(myName);
+        var qry="orders?select=sale_price,cod,timestamp&order=timestamp.desc";
+        if(!isAdmin&&myEmail)qry+="&account_email=eq."+encodeURIComponent(myEmail);
         while(true){
           var from=page*size;var to=from+size-1;
           var r=await api(qry,{range:from+"-"+to});
@@ -611,44 +608,28 @@ function enhanceParcelStats(){
           if(r.length<size)break;
           page++;if(page>10)break;
         }
-        // Get current month filter from UI
-        var monthMatch=document.querySelector("input[type='month'],input[value*='2026'],input[value*='2025']");
-        var filterMonth="";
-        document.querySelectorAll("button").forEach(function(b){
-          var t=b.textContent.trim();
-          if(t.indexOf("\u0e21\u0e01\u0e23\u0e32")>=0||t.indexOf("\u0e01\u0e38\u0e21\u0e20\u0e32")>=0||t.indexOf("\u0e21\u0e35\u0e19\u0e32")>=0||
-             t.indexOf("\u0e40\u0e21\u0e29\u0e32")>=0||t.indexOf("\u0e1e\u0e24\u0e29\u0e20\u0e32")>=0||t.indexOf("\u0e21\u0e34\u0e16\u0e38")>=0||
-             t.indexOf("\u0e01\u0e23\u0e01\u0e0e\u0e32")>=0||t.indexOf("\u0e2a\u0e34\u0e07\u0e2b\u0e32")>=0||t.indexOf("\u0e01\u0e31\u0e19\u0e22\u0e32")>=0||
-             t.indexOf("\u0e15\u0e38\u0e25\u0e32")>=0||t.indexOf("\u0e1e\u0e24\u0e28\u0e08\u0e34")>=0||t.indexOf("\u0e18\u0e31\u0e19\u0e27\u0e32")>=0){
-            // This button has a Thai month name — find the year nearby
-          }
-        });
-        // Use date from the displayed header (e.g., "(143 รายการ)")
-        // Simpler: get year-month from the first visible parcel date
+        // Detect current month from UI
         var now=new Date();
         var ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-        // Check if a specific month is selected in UI
         document.querySelectorAll("input").forEach(function(inp){
           if(inp.type==="month"&&inp.value)ym=inp.value;
         });
-        // Also check displayed month text
-        document.querySelectorAll("div,span").forEach(function(el){
-          var m=(el.textContent||"").match(/(\d{4})-(\d{2})/);
-          if(m)ym=m[0];
-          var m2=(el.textContent||"").match(/\u0e40\u0e14\u0e37\u0e2d\u0e19.*?(\d{4})/);
+
+        // Filter by month
+        var filtered=all.filter(function(o){
+          var ts=o.timestamp||"";
+          return ts.substring(0,7)===ym;
         });
+        if(filtered.length===0)filtered=all;
 
-        // Filter parcels for the month
-        var filtered=all.filter(function(p){return(p.date||"").substring(0,7)===ym;});
-        if(filtered.length===0)filtered=all; // fallback: use all
-
-        var totalAllCOD=filtered.reduce(function(s,p){return s+(Number(p.cod)||0);},0);
+        // Sum SalePrice (same as report page)
+        var totalCOD=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
 
         // Update the card
-        if(totalAllCOD>0&&codCard){
+        if(totalCOD>0&&codCard){
           var valEl=codCard.querySelector("div:nth-child(2)");
           if(valEl&&valEl.textContent.indexOf("\u0e3f")>=0){
-            valEl.textContent="\u0e3f"+totalAllCOD.toLocaleString();
+            valEl.textContent="\u0e3f"+totalCOD.toLocaleString();
           }
         }
       }catch(e){}
