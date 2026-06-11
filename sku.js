@@ -17,14 +17,9 @@ var _skuStyle=document.createElement("style");
 _skuStyle.id="sku-css";
 _skuStyle.textContent=[
   '[data-hidden="1"]{position:absolute!important;left:-9999px!important;opacity:0!important;height:0!important;overflow:hidden!important}',
-  // ซ่อนแบนเนอร์ตีกลับทุกสี (CSS attribute selector on inline style)
-  'div[style*="gradient"][style*="dc2626"]{display:none!important}',
-  'div[style*="gradient"][style*="ef4444"]{display:none!important}',
-  'div[style*="gradient"][style*="b91c1c"]{display:none!important}',
-  'div[style*="gradient"][style*="d97706"]{display:none!important}',
-  'div[style*="gradient"][style*="b45309"]{display:none!important}',
-  'div[style*="gradient"][style*="92400e"]{display:none!important}',
-  'div[style*="gradient"][style*="78350f"]{display:none!important}'
+  // ซ่อนแบนเนอร์: gradient + border-radius 14px (เฉพาะ banner ไม่โดนปุ่ม)
+  'div[style*="linear-gradient"][style*="border-radius: 14px"]{display:none!important}',
+  'div[style*="linear-gradient"][style*="border-radius: 16px"]{display:none!important}'
 ].join("\n");
 (document.head||document.documentElement).appendChild(_skuStyle);
 
