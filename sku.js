@@ -927,6 +927,9 @@ function tidyCodesBar(){
 function startWatch(){
   if(_ob)return;
   _ob=new MutationObserver(function(){
+    // Skip if user is typing in a form field — ป้องกันพิมพ์ได้ทีละตัว
+    var ae=document.activeElement;
+    if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.isContentEditable))return;
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
