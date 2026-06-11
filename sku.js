@@ -828,10 +828,41 @@ function enhanceReturnRate(){
   }catch(e){}
 }
 
-// HR page — add ประจำ/รายวัน filter
+// HR page — add ประจำ/รายวัน filter + hide non-telesale for HR
 var _hrEmpTypes=null;
 function enhanceHRPage(){
   try{
+    // HR access control — hide non-telesale sections on employee page
+    var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
+    if(_user&&_user.role==="hr"){
+      // Find section headers and hide non-telesale ones
+      document.querySelectorAll("div").forEach(function(d){
+        var t=(d.textContent||"").trim();
+        var bg=(d.style.background||d.style.backgroundColor||"");
+        // Section headers have colored backgrounds
+        if(bg&&d.childElementCount<=3&&d.offsetHeight<50&&d.offsetHeight>20){
+          var headerText=t.split(/\d/)[0].trim();
+          if(headerText==="\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a"||headerText==="HR"||
+             headerText==="\u0e1a\u0e31\u0e0d\u0e0a\u0e35"||headerText==="\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"){
+            // Hide this section header + its rows until next header
+            if(!d.getAttribute("data-hr-hidden")){
+              d.setAttribute("data-hr-hidden","1");
+              d.style.display="none";
+              // Hide rows after this header until next colored header
+              var next=d.nextElementSibling;
+              while(next){
+                var nextBg=(next.style.background||next.style.backgroundColor||"");
+                if(nextBg&&next.offsetHeight<50&&next.offsetHeight>20)break;
+                next.style.display="none";
+                next.setAttribute("data-hr-hidden","1");
+                next=next.nextElementSibling;
+              }
+            }
+          }
+        }
+      });
+    }
+
     // Detect HR performance table
     var table=null;
     document.querySelectorAll("table").forEach(function(t){
