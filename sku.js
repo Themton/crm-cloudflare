@@ -746,41 +746,54 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Enhance return rate — find the ONE banner, change color+text
+// Enhance return rate — hide React banners, use ONE custom banner
 function enhanceReturnRate(){
   try{
-    // Find the banner — any div with gradient background in parcel check page
-    var banner=null;
-    document.querySelectorAll("div").forEach(function(d){
-      var bg=(d.style.background||"");
-      if(bg.indexOf("gradient")>=0&&bg.indexOf("rgb")>=0&&d.querySelector&&d.offsetHeight>40){
-        // Check it's the alert banner (has text about ตีกลับ or our text)
-        var txt=d.textContent||"";
-        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07")>=0)banner=d;
-      }
-    });
-    if(!banner)return;
-
-    // Get return count from card
+    // Get counts
     var returnCount=0,totalCount=0;
     document.querySelectorAll("div").forEach(function(d){
       var t=d.textContent.trim();
-      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
-        var n=d.parentElement.querySelector("div:nth-child(2)");
-        if(n)returnCount=parseInt(n.textContent)||0;
-      }
-      if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement){
-        var n2=d.parentElement.querySelector("div:nth-child(2)");
-        if(n2)totalCount=parseInt(n2.textContent)||0;
+      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){var n=d.parentElement.querySelector("div:nth-child(2)");if(n)returnCount=parseInt(n.textContent)||0;}
+      if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement){var n2=d.parentElement.querySelector("div:nth-child(2)");if(n2)totalCount=parseInt(n2.textContent)||0;}
+    });
+
+    // Hide ALL React gradient banners (not ours)
+    document.querySelectorAll("div").forEach(function(d){
+      if(d.id==="sku-banner")return;
+      var bg=(d.style.background||"");
+      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0)){
+        d.style.display="none";
       }
     });
 
+    // Find stats row for placement
+    var statsRow=null;
+    document.querySelectorAll("div").forEach(function(d){
+      if(d.textContent.trim()==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement)statsRow=d.parentElement.parentElement;
+    });
+    if(!statsRow)return;
+
+    // Ensure our banner exists + is in DOM
+    var banner=document.getElementById("sku-banner");
+    if(!banner){
+      banner=document.createElement("div");
+      banner.id="sku-banner";
+      banner.style.cssText="border-radius:12px;margin:16px 0;overflow:hidden";
+    }
+    if(!document.body.contains(banner)){
+      try{statsRow.after(banner);}catch(e){}
+    }
+
+    // Update content
     if(returnCount===0){
-      // Change to GREEN
       banner.style.background="linear-gradient(135deg,#065f46,#047857)";
       banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#a7f3d0">0%</div><div style="font-size:11px;color:#a7f3d0">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
+    }else{
+      var pct=totalCount>0?Math.round(returnCount/totalCount*100):0;
+      var codLoss=0;document.querySelectorAll("div,b").forEach(function(el){var m=(el.textContent||"").match(/COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 [\u0e3f]?([\d,]+)/);if(m)codLoss=parseInt(m[1].replace(/,/g,""))||0;});
+      banner.style.background="linear-gradient(135deg,#dc2626,#b91c1c)";
+      banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u26A0\uFE0F</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19! \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a '+pct+'%</div><div style="font-size:13px;color:#fecaca;margin-top:4px">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a '+returnCount+' \u0e08\u0e32\u0e01 '+totalCount+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23'+(codLoss>0?' \u00b7 COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f'+codLoss.toLocaleString():'')+'</div><div style="font-size:11px;color:#fecaca;margin-top:2px">\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e41\u0e25\u0e30\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e01\u0e48\u0e2d\u0e19\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#fecaca">'+pct+'%</div><div style="font-size:11px;color:#fecaca">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
     }
-    // If returns > 0, React already renders the red banner correctly — don't touch it
   }catch(e){}
 }
 
