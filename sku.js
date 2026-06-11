@@ -2,6 +2,26 @@
 (function(){
 "use strict";
 
+// Immediate: ซ่อนปุ่มรหัสสินค้าเดิมให้เร็วที่สุด ไม่ให้กระพริบ
+var _rapidHide=setInterval(function(){
+  try{
+    var labels=document.querySelectorAll("label");
+    labels.forEach(function(l){
+      if((l.textContent||"").indexOf("\u0e23\u0e2b\u0e31\u0e2a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0){
+        var sec=l.parentElement;if(!sec)return;
+        for(var i=0;i<sec.children.length;i++){
+          var ch=sec.children[i];
+          if(ch.tagName==="DIV"&&ch.querySelector("button")&&!ch.getAttribute("data-hidden")){
+            ch.style.cssText="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden";
+            ch.setAttribute("data-hidden","1");
+          }
+        }
+      }
+    });
+  }catch(e){}
+},50);
+setTimeout(function(){clearInterval(_rapidHide);},15000);
+
 function getUrl(){return(typeof SUPABASE_URL!=="undefined"?SUPABASE_URL:null)||localStorage.getItem("sb_url")||"https://crm-themt-api.themtja.workers.dev";}
 function getKey(){return(typeof SUPABASE_KEY!=="undefined"?SUPABASE_KEY:null)||localStorage.getItem("sb_key")||"";}
 async function api(path,opts){
