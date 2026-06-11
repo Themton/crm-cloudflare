@@ -2,6 +2,16 @@
 (function(){
 "use strict";
 
+// Immediate: ถ้าหน้าสินค้าเปิดอยู่ก่อน refresh → แสดง overlay ทันทีไม่ให้กระพริบ
+if(localStorage.getItem("sku_page_active")==="1"){
+  var _earlyPage=document.createElement("div");
+  _earlyPage.id="sku-page";
+  _earlyPage.style.cssText="position:fixed;top:0;left:160px;right:0;bottom:0;background:#f0f2f7;z-index:999;overflow-y:auto;padding:24px";
+  _earlyPage.innerHTML='<div style="text-align:center;padding:60px;color:#92400e;font-size:14px">\uD83D\uDCE6 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...</div>';
+  if(document.body)document.body.appendChild(_earlyPage);
+  else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
+}
+
 // Immediate: ซ่อนปุ่มรหัสสินค้าเดิมให้เร็วที่สุด ไม่ให้กระพริบ
 var _rapidHide=setInterval(function(){
   try{
@@ -491,8 +501,8 @@ function startWatch(){
 }
 
 async function init(){
-  await loadCat();injectSidebar();startWatch();
-  setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();restoreTab();}catch(e){}},1500);
+  await loadCat();injectSidebar();restoreTab();startWatch();
+  setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();if(!_skuPageActive)restoreTab();}catch(e){}},1500);
   setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();}catch(e){}},4000);
   console.log("[SKU] v3 loaded "+CAT.length+" products");
 }
