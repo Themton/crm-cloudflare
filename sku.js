@@ -15,6 +15,7 @@ if(localStorage.getItem("sku_page_active")==="1"){
 // Immediate: ซ่อนปุ่มรหัสสินค้าเดิมให้เร็วที่สุด ไม่ให้กระพริบ
 var _rapidHide=setInterval(function(){
   try{
+    // ซ่อนปุ่มในฟอร์ม
     var labels=document.querySelectorAll("label");
     labels.forEach(function(l){
       if((l.textContent||"").indexOf("\u0e23\u0e2b\u0e31\u0e2a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0){
@@ -28,6 +29,15 @@ var _rapidHide=setInterval(function(){
         }
       }
     });
+    // ซ่อนแถบ product codes ด้านบน (ที่มี ×)
+    var newPC=document.getElementById("_newPC");
+    if(newPC){
+      var bar=newPC.parentElement;
+      if(bar&&!bar.getAttribute("data-sku-hidden")){
+        for(var j=0;j<bar.children.length;j++)bar.children[j].style.display="none";
+        bar.setAttribute("data-sku-hidden","1");
+      }
+    }
   }catch(e){}
 },50);
 setTimeout(function(){clearInterval(_rapidHide);},15000);
