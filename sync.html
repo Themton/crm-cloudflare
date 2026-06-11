@@ -45,7 +45,8 @@ h1{color:#3b82f6;font-size:22px;margin-bottom:8px}
 <div class="btns">
 <button class="btn btn-blue" onclick="checkAll()">🔍 ตรวจสอบข้อมูล</button>
 <button class="btn btn-purple" onclick="syncFlashStatus()">🚚 ซิงค์สถานะ Flash</button>
-<button class="btn btn-amber" onclick="syncMissingOrders()">📦 ซิงค์ Orders ที่หาย</button>
+<button class="btn btn-amber" onclick="syncMissingOrders()">📦 ซิงค์ Orders</button>
+<button class="btn btn-amber" onclick="syncMissingUpsell()">🔥 ซิงค์ Upsell</button>
 <button class="btn btn-green" onclick="syncEverything()">🔄 ซิงค์ทั้งหมด</button>
 </div>
 
@@ -76,8 +77,8 @@ async function checkAll(){
   var c=cfg();$('log').innerHTML='';
   log('🔍 กำลังตรวจสอบ...','info');pb(5);
 
-  var tables=['orders','parcel_checks','accounts'];
-  var bkeys={orders:'order_id',parcel_checks:'tracking_no',accounts:'username'};
+  var tables=['orders','upsell','parcel_checks','accounts'];
+  var bkeys={orders:'order_id',upsell:'order_id',parcel_checks:'tracking_no',accounts:'username'};
 
   for(var i=0;i<tables.length;i++){
     var t=tables[i],bk=bkeys[t];
@@ -145,28 +146,27 @@ async function syncFlashStatus(){
   log('🎉 ซิงค์สถานะ Flash เสร็จ! orders '+updated+' + parcels '+pUpdated,'ok');
 }
 
-// ============ ซิงค์ Orders ที่หาย (เพิ่มใหม่) ============
-async function syncMissingOrders(){
-  var c=cfg();log('📦 หา orders ที่หายไป...','info');pb(5);
+// ============ ซิงค์ที่หาย (เพิ่มใหม่) — รองรับ orders + upsell ============
+async function syncMissingTable(table){
+  var c=cfg();log('📦 หา '+table+' ที่หายไป...','info');pb(5);
 
-  var sb=await fetchAll(c.sbUrl,c.sbKey,'orders');
+  var sb=await fetchAll(c.sbUrl,c.sbKey,table);
   log('  Supabase: '+sb.length,'info');pb(25);
-  var d1=await fetchAll(c.cfUrl,c.cfKey,'orders');
+  var d1=await fetchAll(c.cfUrl,c.cfKey,table);
   log('  D1: '+d1.length,'info');pb(45);
 
   var d1k={};d1.forEach(function(r){if(r.order_id)d1k[r.order_id]=1;});
   var missing=sb.filter(function(r){return r.order_id&&!d1k[r.order_id];});
   log('  ขาด: '+missing.length+' รายการ','warn');
 
-  if(!missing.length){log('✅ ครบแล้ว!','ok');pb(100);return;}
+  if(!missing.length){log('✅ '+table+' ครบแล้ว!','ok');pb(100);return;}
 
-  // Only keep columns that D1 has
   var COLS=['order_id','timestamp','mobile_no','name','address','sub_district','district','province','zip','customer_fb_line','sales_channel','sales_person','account_email','sale_price','cod','remark','status','tracking_no','flash_status','sort_code'];
   var done=0,fail=0;
   for(var i=0;i<missing.length;i++){
     var rec={};COLS.forEach(function(c2){if(missing[i][c2]!==undefined)rec[c2]=missing[i][c2];});
     try{
-      var r=await fetch(c.cfUrl+'/rest/v1/orders',{method:'POST',headers:Object.assign({},hdr(c.cfKey),{Prefer:'return=representation','x-upsert':'true'}),body:JSON.stringify(rec)});
+      var r=await fetch(c.cfUrl+'/rest/v1/'+table,{method:'POST',headers:Object.assign({},hdr(c.cfKey),{Prefer:'return=representation','x-upsert':'true'}),body:JSON.stringify(rec)});
       if(r.ok){done++;}
       else{
         fail++;
@@ -175,17 +175,20 @@ async function syncMissingOrders(){
     }catch(e){fail++;if(fail<=5)log('  ❌ '+e.message,'err');}
     if((i+1)%20===0||i===missing.length-1){
       pb(50+((i+1)/missing.length)*50);
-      log('  📊 '+( i+1)+'/'+missing.length+' (สำเร็จ '+done+' ล้มเหลว '+fail+')','info');
+      log('  📊 '+(i+1)+'/'+missing.length+' (สำเร็จ '+done+' ล้มเหลว '+fail+')','info');
     }
   }
-  pb(100);log('✅ เพิ่ม orders: '+done+' สำเร็จ'+(fail>0?', ล้มเหลว '+fail:''),'ok');
+  pb(100);log('✅ '+table+': เพิ่ม '+done+' สำเร็จ'+(fail>0?', ล้มเหลว '+fail:''),'ok');
 }
+async function syncMissingOrders(){await syncMissingTable('orders');}
+async function syncMissingUpsell(){await syncMissingTable('upsell');}
 
 // ============ ซิงค์ทั้งหมด ============
 async function syncEverything(){
   $('log').innerHTML='';
   log('🔄 เริ่มซิงค์ทั้งหมด...','info');
   await syncMissingOrders();
+  await syncMissingUpsell();
   await syncFlashStatus();
   log('','');log('🎉 เสร็จทุกอย่าง!','ok');
 }
