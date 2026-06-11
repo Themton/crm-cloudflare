@@ -560,7 +560,7 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
-// Inject "เดือนก่อน" button + save/restore filter selection
+// Inject "เดือนก่อน" button + customize filter bar
 function injectPrevMonthBtn(){
   try{
     var filterBar=null;
@@ -569,25 +569,34 @@ function injectPrevMonthBtn(){
     });
     if(!filterBar)return;
 
-    // Save filter on every button click
+    // Save filter on click
     if(!filterBar.getAttribute("data-sku-listen")){
       filterBar.setAttribute("data-sku-listen","1");
       filterBar.addEventListener("click",function(e){
         var btn=e.target.closest("button");
-        if(btn){localStorage.setItem("sku_parcel_filter",btn.textContent.trim());}
+        if(btn)localStorage.setItem("sku_parcel_filter",btn.textContent.trim());
       });
     }
 
-    // Restore last filter (once)
+    // Restore last filter OR default to วันนี้
     if(!_parcelFilterRestored){
       _parcelFilterRestored=true;
-      var lastFilter=localStorage.getItem("sku_parcel_filter");
-      if(lastFilter){
-        filterBar.querySelectorAll("button").forEach(function(b){
-          if(b.textContent.trim()===lastFilter)b.click();
-        });
-      }
+      var lastFilter=localStorage.getItem("sku_parcel_filter")||"\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49";
+      filterBar.querySelectorAll("button").forEach(function(b){
+        if(b.textContent.trim()===lastFilter)b.click();
+      });
     }
+
+    // Rename "เลือกเดือน" → calendar icon 📅
+    filterBar.querySelectorAll("button").forEach(function(b){
+      if(b.textContent.trim()==="\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e14\u0e37\u0e2d\u0e19"&&!b.getAttribute("data-sku-icon")){
+        b.setAttribute("data-sku-icon","1");
+        b.textContent="\uD83D\uDCC5";
+        b.title="\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e14\u0e37\u0e2d\u0e19";
+        b.style.fontSize="16px";
+        b.style.padding="4px 10px";
+      }
+    });
 
     if(filterBar.querySelector("#sku-prev-month"))return;
 
