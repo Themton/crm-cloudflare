@@ -294,7 +294,7 @@ function _showEditRow(idx){
   `;
   
   itemEl.style.display="none";
-  itemEl.parentNode.insertBefore(editDiv,itemEl.nextSibling);
+  try{ itemEl.after(editDiv); }catch(e){ try{ itemEl.parentNode.appendChild(editDiv); }catch(e2){} }
 }
 
 window._skuSaveEdit=function(idx){
@@ -331,8 +331,8 @@ function createFAB(){
 // Watch DOM for product code buttons and enhance them
 var _lastEnhanced=0;
 function enhanceOrderForm(){
+  try{
   // Find product code button containers
-  // The buttons are in a div with style gap:8, flexWrap:wrap
   var allButtons=document.querySelectorAll("button[type='button']");
   var pcButtons=[];
   
@@ -394,10 +394,11 @@ function enhanceOrderForm(){
   });
   
   _lastEnhanced=Date.now();
+  }catch(e){ /* safe fail */ }
 }
 
 function _autoFillPrice(){
-  // Find all currently selected product buttons (they have blue border/background)
+  try{
   var allButtons=document.querySelectorAll("button[data-sku-enhanced]");
   var totalPrice=0;
   var selectedItems=[];
@@ -433,13 +434,13 @@ function _autoFillPrice(){
   }else{
     _removePriceSummary();
   }
+  }catch(e){ /* safe fail */ }
 }
 
 function _fillPriceInput(price){
-  // Find inputs - SalePrice is usually an input with placeholder or near "ราคาขาย"
+  try{
   var inputs=document.querySelectorAll("input");
   inputs.forEach(function(inp){
-    // Look for price-related input
     var placeholder=(inp.placeholder||"").toLowerCase();
     var prev=inp.previousElementSibling;
     var prevText=prev?(prev.textContent||""):"";
@@ -447,18 +448,17 @@ function _fillPriceInput(price){
     if(placeholder.indexOf("ราคา")>=0||placeholder.indexOf("saleprice")>=0||
        placeholder.indexOf("sale")>=0||placeholder.indexOf("price")>=0||
        prevText.indexOf("ราคาขาย")>=0||prevText.indexOf("SalePrice")>=0){
-      // Set value using native input setter to trigger React
       var nativeSet=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
       nativeSet.call(inp,String(price));
       inp.dispatchEvent(new Event("input",{bubbles:true}));
       inp.dispatchEvent(new Event("change",{bubbles:true}));
     }
   });
+  }catch(e){}
 }
 
 function _showPriceSummary(total,items){
   _removePriceSummary();
-  // Find the product code section and add summary after it
   var pcSection=document.querySelector("button[data-sku-enhanced]");
   if(!pcSection) return;
   var container=pcSection.parentElement;
@@ -468,7 +468,7 @@ function _showPriceSummary(total,items){
   summary.id="sku-price-summary";
   summary.className="sku-price-auto";
   summary.innerHTML='<span>💰</span><span>รวม <b>฿'+total.toLocaleString()+'</b></span><span style="font-size:11px;color:#78716c;margin-left:auto">'+items.join(" + ")+'</span>';
-  container.parentNode.insertBefore(summary,container.nextSibling);
+  try{ container.after(summary); }catch(e){ try{ container.parentNode.appendChild(summary); }catch(e2){} }
 }
 
 function _removePriceSummary(){
@@ -478,12 +478,14 @@ function _removePriceSummary(){
 
 // ── DOM Observer ──
 var _observer=null;
+var _enhanceTimer=null;
 function startObserving(){
   if(_observer) return;
   _observer=new MutationObserver(function(){
-    // Debounce
-    if(Date.now()-_lastEnhanced<200) return;
-    enhanceOrderForm();
+    if(_enhanceTimer) clearTimeout(_enhanceTimer);
+    _enhanceTimer=setTimeout(function(){
+      try{ enhanceOrderForm(); }catch(e){}
+    },300);
   });
   _observer.observe(document.body,{childList:true,subtree:true});
 }
