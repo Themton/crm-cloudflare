@@ -746,10 +746,10 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Enhance return rate — green when 0 returns
+// Enhance return rate — green when 0 returns, keep banner always visible
 function enhanceReturnRate(){
   try{
-    // Find cards
+    // Find return card
     var returnCard=null,rateCard=null;
     document.querySelectorAll("div").forEach(function(d){
       var t=d.textContent.trim();
@@ -757,15 +757,23 @@ function enhanceReturnRate(){
       if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
     });
 
-    // Get return count
     var returnCount=0;
     if(returnCard){
       var numEl=returnCard.querySelector("div:nth-child(2)");
       if(numEl)returnCount=parseInt(numEl.textContent)||0;
     }
 
+    // Find banner (red gradient)
+    var banner=null;
+    document.querySelectorAll("div").forEach(function(d){
+      var bg=(d.style.background||d.style.backgroundImage||"");
+      if(bg.indexOf("gradient")>=0&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0||bg.indexOf("065f46")>=0)){
+        banner=d;
+      }
+    });
+
     if(returnCount===0){
-      // Remove stale สูญเสีย badge
+      // Remove stale badges
       if(returnCard){
         returnCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
         returnCard.style.borderColor="#22c55e";
@@ -777,33 +785,23 @@ function enhanceReturnRate(){
         var p=rateCard.querySelector("div:nth-child(2)");
         if(p)p.style.color="#22c55e";
       }
-      // Create green banner if no banner exists
-      var existingBanner=document.getElementById("sku-green-banner");
-      var origBanner=null;
-      document.querySelectorAll("div").forEach(function(d){
-        if((d.textContent||"").indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0&&d.style&&(d.style.background||"").indexOf("gradient")>=0)origBanner=d;
-      });
-      if(origBanner){
-        origBanner.style.background="linear-gradient(135deg,#065f46,#047857)";
-        origBanner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08</div></div><div style="margin-left:auto;font-size:36px;font-weight:800;color:#a7f3d0">0%</div></div>';
-      }else if(!existingBanner){
-        // Find stats cards container to insert banner after
-        var statsRow=null;
-        if(returnCard)statsRow=returnCard.parentElement;
-        if(statsRow){
-          var banner=document.createElement("div");
-          banner.id="sku-green-banner";
-          banner.style.cssText="background:linear-gradient(135deg,#065f46,#047857);border-radius:12px;margin:16px 0;overflow:hidden";
-          banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08</div></div><div style="margin-left:auto;font-size:36px;font-weight:800;color:#a7f3d0">0%</div></div>';
-          try{statsRow.after(banner);}catch(e){statsRow.parentNode.appendChild(banner);}
+      // Change banner to green
+      if(banner){
+        banner.style.background="linear-gradient(135deg,#065f46,#047857)";
+        // Only change inner content once
+        if(!banner.getAttribute("data-sku-green")){
+          banner.setAttribute("data-sku-green","1");
+          banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#a7f3d0">0%</div><div style="font-size:11px;color:#a7f3d0;margin-top:2px">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
         }
       }
+      // Remove old green banner if exists
+      var gb=document.getElementById("sku-green-banner");if(gb)gb.remove();
     }else{
-      // Has returns — remove green banner, reset styles
-      var gb=document.getElementById("sku-green-banner");
-      if(gb)gb.remove();
+      // Has returns — reset card styles, React handles banner
       if(returnCard)returnCard.style.borderColor="";
       if(rateCard)rateCard.style.borderColor="";
+      if(banner)banner.removeAttribute("data-sku-green");
+      var gb=document.getElementById("sku-green-banner");if(gb)gb.remove();
     }
   }catch(e){}
 }
