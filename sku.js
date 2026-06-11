@@ -12,8 +12,8 @@ if(localStorage.getItem("sku_page_active")==="1"){
   else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
 }
 
-// Immediate: ซ่อนปุ่มรหัสสินค้าเดิม + auto-click วันนี้ ให้เร็วที่สุด
-var _parcelDefaultSet=false;
+// Immediate: ซ่อนปุ่มรหัสสินค้าเดิม + restore last parcel filter
+var _parcelFilterRestored=false;
 var _rapidHide=setInterval(function(){
   try{
     // ซ่อนปุ่มในฟอร์ม
@@ -37,19 +37,6 @@ var _rapidHide=setInterval(function(){
       if(bar&&!bar.getAttribute("data-sku-hidden")){
         for(var j=0;j<bar.children.length;j++)bar.children[j].style.display="none";
         bar.setAttribute("data-sku-hidden","1");
-      }
-    }
-    // Auto-click วันนี้ ทันทีที่เจอ filter bar
-    if(!_parcelDefaultSet){
-      var filterBar=null;
-      document.querySelectorAll("span,div").forEach(function(el){
-        if((el.textContent||"").trim()==="\uD83D\uDCC5 \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32:"&&el.parentElement)filterBar=el.parentElement;
-      });
-      if(filterBar){
-        _parcelDefaultSet=true;
-        filterBar.querySelectorAll("button").forEach(function(b){
-          if((b.textContent||"").trim()==="\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49")b.click();
-        });
       }
     }
   }catch(e){}
@@ -568,14 +555,36 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
-// Inject "เดือนก่อน" button
+// Inject "เดือนก่อน" button + save/restore filter selection
 function injectPrevMonthBtn(){
   try{
     var filterBar=null;
     document.querySelectorAll("span,div").forEach(function(el){
       if((el.textContent||"").trim()==="\uD83D\uDCC5 \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32:"&&el.parentElement)filterBar=el.parentElement;
     });
-    if(!filterBar||filterBar.querySelector("#sku-prev-month"))return;
+    if(!filterBar)return;
+
+    // Save filter on every button click
+    if(!filterBar.getAttribute("data-sku-listen")){
+      filterBar.setAttribute("data-sku-listen","1");
+      filterBar.addEventListener("click",function(e){
+        var btn=e.target.closest("button");
+        if(btn){localStorage.setItem("sku_parcel_filter",btn.textContent.trim());}
+      });
+    }
+
+    // Restore last filter (once)
+    if(!_parcelFilterRestored){
+      _parcelFilterRestored=true;
+      var lastFilter=localStorage.getItem("sku_parcel_filter");
+      if(lastFilter){
+        filterBar.querySelectorAll("button").forEach(function(b){
+          if(b.textContent.trim()===lastFilter)b.click();
+        });
+      }
+    }
+
+    if(filterBar.querySelector("#sku-prev-month"))return;
 
     // Find "เมื่อวาน" button to insert after it
     var yesterdayBtn=null;
