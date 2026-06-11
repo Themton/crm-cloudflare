@@ -692,31 +692,25 @@ var _lastParcelTotal=-1;
 var _forceInterval=null;
 function enhanceParcelStats(){
   try{
-    var codLabel=null;
-    document.querySelectorAll("div").forEach(function(d){
-      if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)codLabel=d;
-    });
-    if(!codLabel)return;
-    var codCard=codLabel.parentElement;
+    // Single scan: find codCard + returnCard
+    var codCard=null,returnCard=null,codLoss=0;
+    var divs=document.querySelectorAll("div");
+    for(var i=0;i<divs.length;i++){
+      var d=divs[i],t=d.textContent.trim();
+      if(t==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)codCard=d.parentElement;
+      else if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
+      var m=(t).match(/COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 [\u0e3f]?([\d,]+)/);
+      if(m)codLoss=parseInt(m[1].replace(/,/g,""))||0;
+    }
+    if(!codCard)return;
 
     // Returned COD badge
-    var returnCard=null;
-    document.querySelectorAll("div").forEach(function(d){
-      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
-    });
-    if(returnCard&&!returnCard.querySelector(".sku-return-cod")){
-      var codLoss=0;
-      document.querySelectorAll("div,b").forEach(function(el){
-        var m=(el.textContent||"").match(/COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 [\u0e3f]?([\d,]+)/);
-        if(m)codLoss=parseInt(m[1].replace(/,/g,""))||0;
-      });
-      if(codLoss>0){
-        var badge=document.createElement("div");
-        badge.className="sku-return-cod";
-        badge.style.cssText="font-size:12px;color:#ef4444;font-weight:700;margin-top:4px";
-        badge.textContent="\u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f"+codLoss.toLocaleString();
-        returnCard.appendChild(badge);
-      }
+    if(returnCard&&!returnCard.querySelector(".sku-return-cod")&&codLoss>0){
+      var badge=document.createElement("div");
+      badge.className="sku-return-cod";
+      badge.style.cssText="font-size:12px;color:#ef4444;font-weight:700;margin-top:4px";
+      badge.textContent="\u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f"+codLoss.toLocaleString();
+      returnCard.appendChild(badge);
     }
 
     // Detect month from table
@@ -781,49 +775,43 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Fix parcel stats — rename รอจัดส่ง → กำลังจัดส่ง, make all numbers add up
+// Fix parcel stats — single DOM scan for all cards
 function enhanceReturnRate(){
   try{
-    // Read values from existing cards
-    var totalCount=0,confirmedCount=0,pendingCount=0,returnedCount=0;
+    // Single scan: find all stat cards + detect page
     var totalCard=null,confirmedCard=null,pendingCard=null,returnedCard=null,rateCard=null;
-    document.querySelectorAll("div").forEach(function(d){
-      var t=d.textContent.trim();
-      if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement){totalCard=d.parentElement;var n=totalCard.querySelector("div:nth-child(2)");if(n)totalCount=parseInt(n.textContent)||0;}
-      if(t==="\u0e40\u0e0b\u0e47\u0e19\u0e23\u0e31\u0e1a\u0e41\u0e25\u0e49\u0e27"&&d.parentElement){confirmedCard=d.parentElement;var n=confirmedCard.querySelector("div:nth-child(2)");if(n)confirmedCount=parseInt(n.textContent)||0;}
-      if(t==="\u0e23\u0e2d\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"&&d.parentElement){pendingCard=d.parentElement;var n=pendingCard.querySelector("div:nth-child(2)");if(n)pendingCount=parseInt(n.textContent)||0;}
-      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){returnedCard=d.parentElement;var n=returnedCard.querySelector("div:nth-child(2)");if(n)returnedCount=parseInt(n.textContent)||0;}
-      if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
-    });
+    var totalCount=0,confirmedCount=0,returnedCount=0;
+    var isParcelPage=false;
+    var divs=document.querySelectorAll("div");
+    for(var i=0;i<divs.length;i++){
+      var d=divs[i],t=d.textContent.trim(),p=d.parentElement;
+      if(t==="\u0e40\u0e0a\u0e47\u0e04\u0e1e\u0e31\u0e2a\u0e14\u0e38"&&d.childElementCount<=3)isParcelPage=true;
+      if(!p||p.childElementCount>6)continue;
+      if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"){totalCard=p;var n=p.querySelector("div:nth-child(2)");if(n)totalCount=parseInt(n.textContent)||0;}
+      else if(t==="\u0e40\u0e0b\u0e47\u0e19\u0e23\u0e31\u0e1a\u0e41\u0e25\u0e49\u0e27"){confirmedCard=p;var n=p.querySelector("div:nth-child(2)");if(n)confirmedCount=parseInt(n.textContent)||0;}
+      else if(t==="\u0e23\u0e2d\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"||t==="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07")pendingCard=p;
+      else if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"){returnedCard=p;var n=p.querySelector("div:nth-child(2)");if(n)returnedCount=parseInt(n.textContent)||0;}
+      else if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")rateCard=p;
+    }
+    if(!isParcelPage||!totalCard)return;
 
-    // Calculate กำลังจัดส่ง = ทั้งหมด - เซ็นรับ - ตีกลับ (จับทุกสถานะที่ตกหล่น)
+    // กำลังจัดส่ง = ทั้งหมด - เซ็นรับ - ตีกลับ
     var inTransit=Math.max(0,totalCount-confirmedCount-returnedCount);
-
-    // Rename "รอจัดส่ง" → "กำลังจัดส่ง" + update count
     if(pendingCard){
       var label=pendingCard.querySelector("div:first-child");
       var num=pendingCard.querySelector("div:nth-child(2)");
-      if(label&&label.textContent.trim()==="\u0e23\u0e2d\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"){
-        label.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07";
-      }
-      if(num){
-        num.textContent=String(inTransit);
-        num.style.color=inTransit>0?"#3b82f6":"#22c55e";
-      }
+      if(label&&label.textContent.trim()==="\u0e23\u0e2d\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07")label.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07";
+      if(num){num.textContent=String(inTransit);num.style.color=inTransit>0?"#3b82f6":"#22c55e";}
       pendingCard.style.borderColor=inTransit>0?"#3b82f6":"#22c55e";
     }
-
-    // Color returned card
     if(returnedCard){
       returnedCard.style.borderColor=returnedCount===0?"#22c55e":"";
-      var rn=returnedCard.querySelector("div:nth-child(2)");
-      if(rn)rn.style.color=returnedCount===0?"#22c55e":"";
+      var rn=returnedCard.querySelector("div:nth-child(2)");if(rn)rn.style.color=returnedCount===0?"#22c55e":"";
       if(returnedCount===0)returnedCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
     }
     if(rateCard){
       rateCard.style.borderColor=returnedCount===0?"#22c55e":"";
-      var rp=rateCard.querySelector("div:nth-child(2)");
-      if(rp)rp.style.color=returnedCount===0?"#22c55e":"";
+      var rp=rateCard.querySelector("div:nth-child(2)");if(rp)rp.style.color=returnedCount===0?"#22c55e":"";
     }
   }catch(e){}
 }
@@ -835,29 +823,26 @@ function enhanceHRPage(){
     // HR access control — hide non-telesale sections on employee page
     var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
     if(_user&&_user.role==="hr"){
-      // ซ่อนด้วย CSS ที่ target สี background ของ section header
-      // ผู้ดูแลระบบ = rgb(254,243,199), HR = rgb(233,213,255), บัญชี = rgb(209,250,229), จัดส่ง = rgb(186,230,253)
-      if(!document.getElementById("hr-hide-css")){
-        var s=document.createElement("style");s.id="hr-hide-css";
-        s.textContent='';
-        document.head.appendChild(s);
+      // Quick check: only run on employee page (has "บัญชี X คน" text)
+      var pageText=document.body.textContent||"";
+      if(pageText.indexOf("\u0e1a\u0e31\u0e0d\u0e0a\u0e35")<0||pageText.indexOf("\u0e04\u0e19")<0){}
+      else{
+        var hideKeys=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07","HR"];
+        // Only scan divs with limited children (section headers are small)
+        document.querySelectorAll("div").forEach(function(d){
+          if(d.childElementCount>5)return;
+          var txt=(d.textContent||"").trim();
+          if(txt.indexOf("\u0e04\u0e19")<0||txt.length>30)return;
+          var shouldHide=false;
+          for(var i=0;i<hideKeys.length;i++){if(txt.indexOf(hideKeys[i])>=0){shouldHide=true;break;}}
+          if(!shouldHide)return;
+          // Check bg color (only for matching divs, not all divs)
+          var bg=window.getComputedStyle(d).backgroundColor;
+          if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg==="rgb(255, 255, 255)"||bg==="rgb(240, 242, 247)")return;
+          var wrapper=d.parentElement;
+          if(wrapper)wrapper.style.setProperty("display","none","important");
+        });
       }
-      // JS: ซ่อน section wrappers ทุก 400ms
-      var hideKeys=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07","HR"];
-      document.querySelectorAll("div").forEach(function(d){
-        var bg=window.getComputedStyle(d).backgroundColor;
-        if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg==="rgb(255, 255, 255)"||bg==="rgb(240, 242, 247)")return;
-        var txt=(d.textContent||"").trim();
-        if(txt.indexOf("\u0e04\u0e19")<0||d.childElementCount>5)return;
-        var shouldHide=false;
-        for(var i=0;i<hideKeys.length;i++){if(txt.indexOf(hideKeys[i])>=0){shouldHide=true;break;}}
-        if(!shouldHide)return;
-        // Hide wrapper = header's parent (contains header + employee rows)
-        var wrapper=d.parentElement;
-        if(wrapper){
-          wrapper.style.setProperty("display","none","important");
-        }
-      });
     }
 
     // Detect HR performance table
