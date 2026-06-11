@@ -289,26 +289,14 @@ function showSkuPage(){
   _skuPageActive=true;
   // Highlight sidebar button
   var btn=document.getElementById("sku-nav-btn");
-  if(btn)btn.style.cssText=btn.style.cssText.replace(/background:[^;]*/,"background:rgba(251,191,36,.15)")+";color:#fde68a;font-weight:700";
-  // Deactivate other nav buttons
-  var nav=document.querySelector("nav");
-  if(nav)nav.querySelectorAll("button,a").forEach(function(b){if(b.id!=="sku-nav-btn"){b.style.background="none";b.style.fontWeight="500";}});
-  // Find main content area (right side of sidebar)
-  var root=document.getElementById("root");
-  if(!root)return;
-  var main=root.querySelector("div > div:last-child")||root.children[0];
-  if(!main)return;
-  // Hide existing content
-  for(var i=0;i<main.children.length;i++){
-    if(main.children[i].id!=="sku-page")main.children[i].style.display="none";
-  }
-  // Create or show page
+  if(btn)btn.style.background="rgba(251,191,36,.15)";
+  // Create overlay page on top of content — ไม่ซ่อน content เดิม
   var page=document.getElementById("sku-page");
   if(!page){
     page=document.createElement("div");
     page.id="sku-page";
-    page.style.cssText="padding:24px;max-width:800px;animation:fadeIn .2s";
-    main.appendChild(page);
+    page.style.cssText="position:fixed;top:0;left:160px;right:0;bottom:0;background:#f0f2f7;z-index:999;overflow-y:auto;padding:24px;animation:fadeIn .2s";
+    document.body.appendChild(page);
   }
   page.style.display="block";
   renderSkuPage();
@@ -317,24 +305,17 @@ function showSkuPage(){
 function hideSkuPage(){
   _skuPageActive=false;
   var btn=document.getElementById("sku-nav-btn");
-  if(btn)btn.style.cssText=btn.style.cssText.replace(/background:[^;]*/,"background:none")+";color:inherit;font-weight:500";
+  if(btn)btn.style.background="none";
   var page=document.getElementById("sku-page");
   if(page)page.style.display="none";
-  // Show original content
-  var root=document.getElementById("root");
-  if(!root)return;
-  var main=root.querySelector("div > div:last-child")||root.children[0];
-  if(!main)return;
-  for(var i=0;i<main.children.length;i++){
-    if(main.children[i].id!=="sku-page")main.children[i].style.display="";
-  }
 }
 
 function renderSkuPage(){
   var page=document.getElementById("sku-page");
   if(!page)return;
   var cats={};CAT.forEach(function(p,i){if(!cats[p.cat])cats[p.cat]=[];cats[p.cat].push({p:p,i:i});});
-  var h='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">';
+  var h='<div style="max-width:800px;margin:0 auto">';
+  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">';
   h+='<h1 style="flex:1;font-size:20px;font-weight:800;color:#1e293b;margin:0">\uD83D\uDCE6 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32</h1>';
   h+='<span style="font-size:14px;color:#78716c">'+CAT.length+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span></div>';
   // Add form
@@ -360,6 +341,7 @@ function renderSkuPage(){
     h+='</div>';
   });
   if(CAT.length===0)h+='<div style="text-align:center;padding:40px;color:#94a3b8;font-size:14px">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 \u2014 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e14\u0e49\u0e32\u0e19\u0e1a\u0e19</div>';
+  h+='</div>'; // close max-width wrapper
   page.innerHTML=h;
   // Bind add
   var ab=document.getElementById("sp-add");
