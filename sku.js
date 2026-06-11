@@ -618,10 +618,9 @@ function injectPrevMonthBtn(){
     btn.textContent="\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e01\u0e48\u0e2d\u0e19";
     btn.style.cssText="padding:6px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
     btn.onclick=function(){
-      // Click "เลือกเดือน" button first
-      filterBar.querySelectorAll("button").forEach(function(b){
-        if((b.textContent||"").trim()==="\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e14\u0e37\u0e2d\u0e19")b.click();
-      });
+      // Click calendar (📅) button first — find by attribute data-sku-icon
+      var calBtn=filterBar.querySelector("[data-sku-icon]");
+      if(calBtn)calBtn.click();
       // Set month input to previous month
       setTimeout(function(){
         var now=new Date();
@@ -629,11 +628,7 @@ function injectPrevMonthBtn(){
         var prevYM=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
         var monthInput=document.querySelector("input[type='month']");
         if(monthInput){
-          var nativeSet=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set;
-          nativeSet.call(monthInput,prevYM);
-          monthInput.dispatchEvent(new Event("input",{bubbles:true}));
-          monthInput.dispatchEvent(new Event("change",{bubbles:true}));
-          // Also try React props
+          // React props method
           try{
             var pk=Object.keys(monthInput).find(function(k){return k.startsWith("__reactProps");});
             if(pk&&monthInput[pk]&&monthInput[pk].onChange){
@@ -641,12 +636,17 @@ function injectPrevMonthBtn(){
               monthInput[pk].onChange({target:monthInput});
             }
           }catch(e){}
+          // Native fallback
+          var nativeSet=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set;
+          nativeSet.call(monthInput,prevYM);
+          monthInput.dispatchEvent(new Event("input",{bubbles:true}));
+          monthInput.dispatchEvent(new Event("change",{bubbles:true}));
         }
-        // Style this button as active
+        // Style active
         btn.style.border="2px solid #d97706";
         btn.style.background="#fef3c7";
         btn.style.color="#92400e";
-      },100);
+      },200);
     };
 
     // Insert after "เมื่อวาน" or "7 วัน"
