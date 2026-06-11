@@ -314,35 +314,37 @@ function injectSidebar(){
   try{
     var nav=document.querySelector("nav");
     if(!nav||nav.querySelector("#sku-nav-btn"))return;
-    // Find a reference button to copy style
     var refBtn=nav.querySelector("button");
     if(!refBtn)return;
     var btn=document.createElement("button");
     btn.id="sku-nav-btn";
     btn.type="button";
-    // Copy style from existing nav button
     var cs=window.getComputedStyle(refBtn);
     btn.style.cssText="display:flex;align-items:center;gap:8px;width:100%;padding:"+cs.padding+";border:none;background:none;color:"+cs.color+";font-size:"+cs.fontSize+";font-family:inherit;cursor:pointer;border-radius:8px;text-align:left;font-weight:500";
     btn.innerHTML='<span style="font-size:16px">\uD83D\uDCE6</span> \u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32';
     btn.onclick=function(){showSkuPage();};
-    // Insert before last items
     var items=nav.querySelectorAll("button,a");
     if(items.length>2){nav.insertBefore(btn,items[items.length-2]);}
     else{nav.appendChild(btn);}
-    // Listen for other nav clicks to deactivate
+    // Listen for other nav clicks — save tab + hide SKU page
     nav.addEventListener("click",function(e){
       var t=e.target.closest("button,a");
-      if(t&&t!==btn&&_skuPageActive){hideSkuPage();}
+      if(!t)return;
+      if(t!==btn){
+        // Save which tab was clicked
+        localStorage.setItem("sku_last_tab",t.textContent.trim());
+        localStorage.removeItem("sku_page_active");
+        if(_skuPageActive)hideSkuPage();
+      }
     });
   }catch(e){}
 }
 
 function showSkuPage(){
   _skuPageActive=true;
-  // Highlight sidebar button
+  localStorage.setItem("sku_page_active","1");
   var btn=document.getElementById("sku-nav-btn");
   if(btn)btn.style.background="rgba(251,191,36,.15)";
-  // Create overlay page on top of content — ไม่ซ่อน content เดิม
   var page=document.getElementById("sku-page");
   if(!page){
     page=document.createElement("div");
@@ -356,10 +358,31 @@ function showSkuPage(){
 
 function hideSkuPage(){
   _skuPageActive=false;
+  localStorage.removeItem("sku_page_active");
   var btn=document.getElementById("sku-nav-btn");
   if(btn)btn.style.background="none";
   var page=document.getElementById("sku-page");
   if(page)page.style.display="none";
+}
+
+// Restore last tab on page load
+function restoreTab(){
+  try{
+    // If SKU page was active, reopen it
+    if(localStorage.getItem("sku_page_active")==="1"){
+      showSkuPage();
+      return;
+    }
+    // Otherwise click the last active nav tab
+    var lastTab=localStorage.getItem("sku_last_tab");
+    if(lastTab){
+      var nav=document.querySelector("nav");
+      if(!nav)return;
+      nav.querySelectorAll("button").forEach(function(b){
+        if(b.textContent.trim()===lastTab && b.id!=="sku-nav-btn")b.click();
+      });
+    }
+  }catch(e){}
 }
 
 function renderSkuPage(){
@@ -469,7 +492,7 @@ function startWatch(){
 
 async function init(){
   await loadCat();injectSidebar();startWatch();
-  setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();}catch(e){}},1500);
+  setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();restoreTab();}catch(e){}},1500);
   setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();}catch(e){}},4000);
   console.log("[SKU] v3 loaded "+CAT.length+" products");
 }
