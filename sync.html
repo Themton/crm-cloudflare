@@ -82,106 +82,81 @@ h1{font-size:22px;font-weight:800;color:#1e293b;margin-bottom:8px}
 
 <script>
 var TABLES=["orders","parcel_checks","accounts","app_settings"];
-var TABLE_PK={"orders":"id","parcel_checks":"id","accounts":"id","app_settings":"key"};
+var TABLE_BK={"orders":"order_id","parcel_checks":"tracking_no","accounts":"username","app_settings":"key"};
 
 function headers(key){return{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"}}
 
 async function fetchAll(baseUrl,key,table){
-  var pk=TABLE_PK[table]||"id";
   var all=[],page=0,size=1000;
   while(true){
     var from=page*size,to=from+size-1;
-    var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=*&order="+pk+".asc",{
-      headers:Object.assign({},headers(key),{Range:from+"-"+to})
-    });
-    if(!r.ok){log("❌ "+table+": HTTP "+r.status,"err");return all;}
-    var data=await r.json();
-    if(!data||data.length===0)break;
-    all=all.concat(data);
-    if(data.length<size)break;
-    page++;
-    if(page>50)break;
+    try{
+      var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=*",{
+        headers:Object.assign({},headers(key),{Range:from+"-"+to})
+      });
+      if(!r.ok){log("\u274c "+table+": HTTP "+r.status,"err");return all;}
+      var data=await r.json();
+      if(!data||data.length===0)break;
+      all=all.concat(data);
+      if(data.length<size)break;
+      page++;if(page>50)break;
+    }catch(e){log("\u274c "+table+": "+e.message,"err");return all;}
   }
   return all;
-}
-
-async function countTable(baseUrl,key,table){
-  var pk=TABLE_PK[table]||"id";
-  try{
-    var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=id&limit=1",{
-      headers:Object.assign({},headers(key),{Range:"0-0",Prefer:"count=exact"})
-    });
-    if(!r.ok)return"err";
-    var ct=r.headers.get("content-range");
-    if(ct){var m=ct.match(/\/(\d+)/);if(m)return parseInt(m[1]);}
-    var data=await r.json();
-    // Fallback: fetch all IDs
-    var r2=await fetch(baseUrl+"/rest/v1/"+table+"?select=id",{headers:headers(key)});
-    if(!r2.ok)return"err";
-    var d2=await r2.json();
-    return d2.length;
-  }catch(e){return"err";}
 }
 
 function log(msg,cls){
   var el=document.getElementById("log");
   document.getElementById("log-card").style.display="block";
-  el.innerHTML+='<span class="'+(cls||"")+'">'+(new Date).toLocaleTimeString()+" "+msg+"</span>\n";
+  el.innerHTML+='<span class="'+(cls||"")+'">'+new Date().toLocaleTimeString()+" "+msg+"</span>\n";
   el.scrollTop=el.scrollHeight;
 }
-
-function setProgress(pct){
-  document.getElementById("prog").style.width=pct+"%";
-}
+function setProgress(pct){document.getElementById("prog").style.width=pct+"%";}
 
 async function checkBoth(){
   var sbUrl=document.getElementById("sb-url").value.trim();
   var sbKey=document.getElementById("sb-key").value.trim();
   var d1Url=document.getElementById("d1-url").value.trim();
   var d1Key=document.getElementById("d1-key").value.trim();
-
   document.getElementById("log").innerHTML="";
-  log("🔍 กำลังตรวจสอบ...","info");
+  log("\ud83d\udd0d \u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a...","info");
 
   var html="";
   for(var i=0;i<TABLES.length;i++){
     var t=TABLES[i];
-    log("📊 ตรวจ "+t+"...","info");
+    var bk=TABLE_BK[t]||"id";
+    log("\ud83d\udcca \u0e15\u0e23\u0e27\u0e08 "+t+" (key: "+bk+")...","info");
 
     var sbData=await fetchAll(sbUrl,sbKey,t);
     var d1Data=await fetchAll(d1Url,d1Key,t);
 
-    var sbCount=sbData.length;
-    var d1Count=d1Data.length;
-    var diff=sbCount-d1Count;
+    // Compare by business key
+    var d1Keys={};
+    d1Data.forEach(function(r){var k=r[bk];if(k)d1Keys[String(k)]=true;});
+    var missing=sbData.filter(function(r){var k=r[bk];return k&&!d1Keys[String(k)];});
 
-    log("  Supabase: "+sbCount+" | D1: "+d1Count+" | ต่าง: "+diff+(diff>0?" ⚠️":""),"ok");
+    log("  Supabase: "+sbData.length+" | D1: "+d1Data.length+" | \u0e02\u0e32\u0e14: "+missing.length+(missing.length>0?" \u26a0\ufe0f":""),"ok");
 
     html+='<div class="sync-row">';
-    html+='<div class="name">'+t+'</div>';
+    html+='<div class="name">'+t+' <span style="font-size:11px;color:#94a3b8">(key: '+bk+")</span></div>";
     html+='<div class="counts">';
-    html+='<span class="badge badge-sb">Supabase: '+sbCount+'</span> ';
-    html+='<span class="badge badge-d1">D1: '+d1Count+'</span> ';
-    if(diff>0){
-      html+='<span style="color:#dc2626;font-weight:700;font-size:12px">ขาด '+diff+' รายการ</span>';
-    }else if(diff===0){
-      html+='<span style="color:#059669;font-weight:700;font-size:12px">✅ ครบ</span>';
+    html+='<span class="badge badge-sb">SB: '+sbData.length+"</span> ";
+    html+='<span class="badge badge-d1">D1: '+d1Data.length+"</span> ";
+    if(missing.length>0){
+      html+='<span style="color:#dc2626;font-weight:700;font-size:12px">\u0e02\u0e32\u0e14 '+missing.length+" \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span>";
     }else{
-      html+='<span style="color:#3b82f6;font-weight:700;font-size:12px">D1 มีมากกว่า '+(d1Count-sbCount)+'</span>';
+      html+='<span style="color:#059669;font-weight:700;font-size:12px">\u2705 \u0e04\u0e23\u0e1a</span>';
     }
-    html+='</div>';
-    if(diff>0){
-      html+='<button class="btn btn-blue" onclick="syncTable(\''+t+'\')">ซิงค์ '+diff+' รายการ</button>';
+    html+="</div>";
+    if(missing.length>0){
+      html+='<button class="btn btn-blue" onclick="syncTable(\'"+t+"\'\')">\u0e0b\u0e34\u0e07\u0e04\u0e4c '+missing.length+" \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</button>";
     }
-    html+='</div>';
+    html+="</div>";
   }
-  html+='<div style="margin-top:12px;display:flex;gap:10px">';
-  html+='<button class="btn btn-green" onclick="syncAll()">🔄 ซิงค์ทั้งหมด</button>';
-  html+='</div>';
-
+  html+='<div style="margin-top:12px"><button class="btn btn-green" onclick="syncAll()">\ud83d\udd04 \u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</button></div>';
   document.getElementById("compare-card").style.display="block";
   document.getElementById("compare-body").innerHTML=html;
-  log("✅ ตรวจสอบเสร็จ","ok");
+  log("\u2705 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08","ok");
 }
 
 async function syncTable(table){
@@ -189,67 +164,55 @@ async function syncTable(table){
   var sbKey=document.getElementById("sb-key").value.trim();
   var d1Url=document.getElementById("d1-url").value.trim();
   var d1Key=document.getElementById("d1-key").value.trim();
+  var bk=TABLE_BK[table]||"id";
 
-  log("🔄 ซิงค์ "+table+"...","info");
+  log("\ud83d\udd04 \u0e0b\u0e34\u0e07\u0e04\u0e4c "+table+"...","info");
   setProgress(10);
 
-  // Fetch all from Supabase
   var sbData=await fetchAll(sbUrl,sbKey,table);
-  log("  Supabase: "+sbData.length+" รายการ","info");
+  log("  Supabase: "+sbData.length,"info");
   setProgress(30);
 
-  // Fetch existing IDs from D1
-  var pk=TABLE_PK[table]||"id";
   var d1Data=await fetchAll(d1Url,d1Key,table);
-  var d1Ids={};
-  d1Data.forEach(function(r){if(r[pk])d1Ids[r[pk]]=true;});
-  log("  D1: "+d1Data.length+" รายการ","info");
+  var d1Keys={};
+  d1Data.forEach(function(r){var k=r[bk];if(k)d1Keys[String(k)]=true;});
+  log("  D1: "+d1Data.length,"info");
   setProgress(50);
 
-  // Find new records
-  var newRecords=sbData.filter(function(r){return r[pk]&&!d1Ids[r[pk]];});
-  log("  ใหม่: "+newRecords.length+" รายการ","warn");
+  var missing=sbData.filter(function(r){var k=r[bk];return k&&!d1Keys[String(k)];});
+  log("  \u0e02\u0e32\u0e14: "+missing.length+" \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23","warn");
 
-  if(newRecords.length===0){
-    log("  ✅ "+table+" ครบแล้ว ไม่มีอะไรต้องซิงค์","ok");
-    setProgress(100);
-    return;
+  if(missing.length===0){
+    log("  \u2705 \u0e04\u0e23\u0e1a\u0e41\u0e25\u0e49\u0e27","ok");
+    setProgress(100);return;
   }
 
-  // Insert in batches of 50
-  var batch=50,done=0,fail=0;
-  for(var i=0;i<newRecords.length;i+=batch){
-    var chunk=newRecords.slice(i,i+batch);
+  // Insert 1 at a time — remove id field to avoid conflicts
+  var done=0,fail=0;
+  for(var i=0;i<missing.length;i++){
+    var rec=Object.assign({},missing[i]);
+    delete rec.id; // let D1 auto-generate
     try{
       var r=await fetch(d1Url+"/rest/v1/"+table,{
         method:"POST",
-        headers:Object.assign({},headers(d1Key),{Prefer:"return=minimal","x-upsert":"true"}),
-        body:JSON.stringify(chunk)
+        headers:Object.assign({},headers(d1Key),{Prefer:"return=minimal"}),
+        body:JSON.stringify(rec)
       });
-      if(r.ok){
-        done+=chunk.length;
-      }else{
-        fail+=chunk.length;
-        log("  ❌ Batch error: HTTP "+r.status,"err");
+      if(r.ok){done++;}
+      else{
+        fail++;
+        if(fail<=3){var txt=await r.text();log("  \u274c #"+(i+1)+": "+r.status+" "+txt.substring(0,100),"err");}
       }
-    }catch(e){
-      fail+=chunk.length;
-      log("  ❌ "+e.message,"err");
-    }
-    setProgress(50+Math.round((i/newRecords.length)*50));
+    }catch(e){fail++;if(fail<=3)log("  \u274c "+e.message,"err");}
+    if(i%10===0)setProgress(50+Math.round((i/missing.length)*50));
   }
-
-  log("  ✅ "+table+": เพิ่ม "+done+" สำเร็จ"+(fail>0?", ล้มเหลว "+fail:""),"ok");
+  log("  \u2705 "+table+": \u0e40\u0e1e\u0e34\u0e48\u0e21 "+done+" \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08"+(fail>0?", \u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27 "+fail:""),"ok");
   setProgress(100);
 }
 
 async function syncAll(){
-  for(var i=0;i<TABLES.length;i++){
-    await syncTable(TABLES[i]);
-  }
-  log("","");
-  log("🎉 ซิงค์ทั้งหมดเสร็จ!","ok");
-  // Re-check
+  for(var i=0;i<TABLES.length;i++)await syncTable(TABLES[i]);
+  log("\ud83c\udf89 \u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e40\u0e2a\u0e23\u0e47\u0e08!","ok");
   setTimeout(checkBoth,1000);
 }
 </script>
