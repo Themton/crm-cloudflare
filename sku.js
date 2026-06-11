@@ -767,24 +767,50 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Clean parcel page — cards only (CSS hides banners automatically)
+// Fix parcel stats — rename รอจัดส่ง → กำลังจัดส่ง, make all numbers add up
 function enhanceReturnRate(){
   try{
-    var returnCount=0;
+    // Read values from existing cards
+    var totalCount=0,confirmedCount=0,pendingCount=0,returnedCount=0;
+    var totalCard=null,confirmedCard=null,pendingCard=null,returnedCard=null,rateCard=null;
     document.querySelectorAll("div").forEach(function(d){
-      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
-        var n=d.parentElement.querySelector("div:nth-child(2)");
-        if(n)returnCount=parseInt(n.textContent)||0;
-        d.parentElement.style.borderColor=returnCount===0?"#22c55e":"";
-        if(n)n.style.color=returnCount===0?"#22c55e":"";
-        if(returnCount===0)d.parentElement.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
-      }
-      if(d.textContent.trim()==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
-        var p=d.parentElement.querySelector("div:nth-child(2)");
-        d.parentElement.style.borderColor=returnCount===0?"#22c55e":"";
-        if(p)p.style.color=returnCount===0?"#22c55e":"";
-      }
+      var t=d.textContent.trim();
+      if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement){totalCard=d.parentElement;var n=totalCard.querySelector("div:nth-child(2)");if(n)totalCount=parseInt(n.textContent)||0;}
+      if(t==="\u0e40\u0e0b\u0e47\u0e19\u0e23\u0e31\u0e1a\u0e41\u0e25\u0e49\u0e27"&&d.parentElement){confirmedCard=d.parentElement;var n=confirmedCard.querySelector("div:nth-child(2)");if(n)confirmedCount=parseInt(n.textContent)||0;}
+      if(t==="\u0e23\u0e2d\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"&&d.parentElement){pendingCard=d.parentElement;var n=pendingCard.querySelector("div:nth-child(2)");if(n)pendingCount=parseInt(n.textContent)||0;}
+      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){returnedCard=d.parentElement;var n=returnedCard.querySelector("div:nth-child(2)");if(n)returnedCount=parseInt(n.textContent)||0;}
+      if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
     });
+
+    // Calculate กำลังจัดส่ง = ทั้งหมด - เซ็นรับ - ตีกลับ (จับทุกสถานะที่ตกหล่น)
+    var inTransit=Math.max(0,totalCount-confirmedCount-returnedCount);
+
+    // Rename "รอจัดส่ง" → "กำลังจัดส่ง" + update count
+    if(pendingCard){
+      var label=pendingCard.querySelector("div:first-child");
+      var num=pendingCard.querySelector("div:nth-child(2)");
+      if(label&&label.textContent.trim()==="\u0e23\u0e2d\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"){
+        label.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07";
+      }
+      if(num){
+        num.textContent=String(inTransit);
+        num.style.color=inTransit>0?"#3b82f6":"#22c55e";
+      }
+      pendingCard.style.borderColor=inTransit>0?"#3b82f6":"#22c55e";
+    }
+
+    // Color returned card
+    if(returnedCard){
+      returnedCard.style.borderColor=returnedCount===0?"#22c55e":"";
+      var rn=returnedCard.querySelector("div:nth-child(2)");
+      if(rn)rn.style.color=returnedCount===0?"#22c55e":"";
+      if(returnedCount===0)returnedCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
+    }
+    if(rateCard){
+      rateCard.style.borderColor=returnedCount===0?"#22c55e":"";
+      var rp=rateCard.querySelector("div:nth-child(2)");
+      if(rp)rp.style.color=returnedCount===0?"#22c55e":"";
+    }
   }catch(e){}
 }
 
