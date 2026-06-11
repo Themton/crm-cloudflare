@@ -82,14 +82,16 @@ h1{font-size:22px;font-weight:800;color:#1e293b;margin-bottom:8px}
 
 <script>
 var TABLES=["orders","parcel_checks","accounts","app_settings"];
+var TABLE_PK={"orders":"id","parcel_checks":"id","accounts":"id","app_settings":"key"};
 
 function headers(key){return{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"}}
 
 async function fetchAll(baseUrl,key,table){
+  var pk=TABLE_PK[table]||"id";
   var all=[],page=0,size=1000;
   while(true){
     var from=page*size,to=from+size-1;
-    var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=*&order=id.asc",{
+    var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=*&order="+pk+".asc",{
       headers:Object.assign({},headers(key),{Range:from+"-"+to})
     });
     if(!r.ok){log("❌ "+table+": HTTP "+r.status,"err");return all;}
@@ -104,6 +106,7 @@ async function fetchAll(baseUrl,key,table){
 }
 
 async function countTable(baseUrl,key,table){
+  var pk=TABLE_PK[table]||"id";
   try{
     var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=id&limit=1",{
       headers:Object.assign({},headers(key),{Range:"0-0",Prefer:"count=exact"})
@@ -196,14 +199,15 @@ async function syncTable(table){
   setProgress(30);
 
   // Fetch existing IDs from D1
+  var pk=TABLE_PK[table]||"id";
   var d1Data=await fetchAll(d1Url,d1Key,table);
   var d1Ids={};
-  d1Data.forEach(function(r){if(r.id)d1Ids[r.id]=true;});
+  d1Data.forEach(function(r){if(r[pk])d1Ids[r[pk]]=true;});
   log("  D1: "+d1Data.length+" รายการ","info");
   setProgress(50);
 
   // Find new records
-  var newRecords=sbData.filter(function(r){return r.id&&!d1Ids[r.id];});
+  var newRecords=sbData.filter(function(r){return r[pk]&&!d1Ids[r[pk]];});
   log("  ใหม่: "+newRecords.length+" รายการ","warn");
 
   if(newRecords.length===0){
