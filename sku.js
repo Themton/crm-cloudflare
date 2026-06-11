@@ -6,7 +6,7 @@
 if(localStorage.getItem("sku_page_active")==="1"){
   var _earlyPage=document.createElement("div");
   _earlyPage.id="sku-page";
-  _earlyPage.style.cssText="position:fixed;top:0;left:160px;right:0;bottom:0;background:#f0f2f7;z-index:999;overflow-y:auto;padding:24px";
+  _earlyPage.style.cssText="position:fixed;top:0;right:0;bottom:0;background:#f0f2f7;z-index:999;overflow-y:auto;padding:24px;left:0";
   _earlyPage.innerHTML='<div style="text-align:center;padding:60px;color:#92400e;font-size:14px">\uD83D\uDCE6 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...</div>';
   if(document.body)document.body.appendChild(_earlyPage);
   else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
@@ -365,13 +365,18 @@ function showSkuPage(){
   localStorage.setItem("sku_page_active","1");
   var btn=document.getElementById("sku-nav-btn");
   if(btn)btn.style.background="rgba(251,191,36,.15)";
+  // Detect sidebar width
+  var sidebar=document.querySelector("nav");
+  var sidebarW=0;
+  if(sidebar){var sb=sidebar.closest("div[style]");if(sb)sidebarW=sb.offsetWidth||0;}
+  if(sidebarW<100)sidebarW=160;
   var page=document.getElementById("sku-page");
   if(!page){
     page=document.createElement("div");
     page.id="sku-page";
-    page.style.cssText="position:fixed;top:0;left:160px;right:0;bottom:0;background:#f0f2f7;z-index:999;overflow-y:auto;padding:24px;animation:fadeIn .2s";
     document.body.appendChild(page);
   }
+  page.style.cssText="position:fixed;top:0;left:"+sidebarW+"px;right:0;bottom:0;background:#f0f2f7;z-index:999;overflow-y:auto;padding:24px;animation:fadeIn .2s";
   page.style.display="block";
   renderSkuPage();
 }
@@ -411,6 +416,7 @@ function renderSkuPage(){
   var cats={};CAT.forEach(function(p,i){if(!cats[p.cat])cats[p.cat]=[];cats[p.cat].push({p:p,i:i});});
   var h='<div style="max-width:800px;margin:0 auto">';
   h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">';
+  h+='<button id="sp-back" type="button" style="padding:8px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:13px;cursor:pointer;font-family:inherit">\u2190 \u0e01\u0e25\u0e31\u0e1a</button>';
   h+='<h1 style="flex:1;font-size:20px;font-weight:800;color:#1e293b;margin:0">\uD83D\uDCE6 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32</h1>';
   h+='<span style="font-size:14px;color:#78716c">'+CAT.length+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span></div>';
   // Add form
@@ -496,6 +502,19 @@ function renderSkuPage(){
       res.innerHTML='<div style="color:#ef4444">\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+esc(e.message)+'</div>';
     }
     cmb.disabled=false;cmb.textContent="\u0e40\u0e17\u0e35\u0e22\u0e1a Orders vs Parcels";
+  };
+  // Bind back button
+  var bb=document.getElementById("sp-back");
+  if(bb)bb.onclick=function(){
+    hideSkuPage();
+    // Click last active tab
+    var lastTab=localStorage.getItem("sku_last_tab");
+    if(lastTab){
+      var nav=document.querySelector("nav");
+      if(nav)nav.querySelectorAll("button").forEach(function(b){
+        if(b.textContent.trim()===lastTab&&b.id!=="sku-nav-btn")b.click();
+      });
+    }
   };
   // Bind add
   var ab=document.getElementById("sp-add");
