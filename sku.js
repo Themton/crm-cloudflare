@@ -12,11 +12,17 @@ if(localStorage.getItem("sku_page_active")==="1"){
   else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
 }
 
-// Immediate: ซ่อนปุ่มรหัสสินค้าเดิม + ซ่อนแบนเนอร์ + restore filter
+// CSS: ซ่อนแบนเนอร์ตีกลับ + ปุ่มรหัสสินค้า ผ่าน CSS (ไม่ trigger MutationObserver)
+var _skuStyle=document.createElement("style");
+_skuStyle.id="sku-css";
+_skuStyle.textContent='[data-hidden="1"]{position:absolute!important;left:-9999px!important;opacity:0!important;height:0!important;overflow:hidden!important}';
+(document.head||document.documentElement).appendChild(_skuStyle);
+
+// Lightweight rapid hide — ไม่สแกน div ทั้งหมด แค่ mark elements
 var _parcelFilterRestored=false;
 var _rapidHide=setInterval(function(){
   try{
-    // ซ่อนปุ่มในฟอร์ม
+    // ซ่อนปุ่มในฟอร์ม (เฉพาะ label ไม่สแกน div ทั้งหมด)
     var labels=document.querySelectorAll("label");
     labels.forEach(function(l){
       if((l.textContent||"").indexOf("\u0e23\u0e2b\u0e31\u0e2a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0){
@@ -24,13 +30,12 @@ var _rapidHide=setInterval(function(){
         for(var i=0;i<sec.children.length;i++){
           var ch=sec.children[i];
           if(ch.tagName==="DIV"&&ch.querySelector("button")&&!ch.getAttribute("data-hidden")){
-            ch.style.cssText="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden";
             ch.setAttribute("data-hidden","1");
           }
         }
       }
     });
-    // ซ่อนแถบ product codes ด้านบน
+    // ซ่อนแถบ product codes
     var newPC=document.getElementById("_newPC");
     if(newPC){
       var bar=newPC.parentElement;
@@ -39,18 +44,8 @@ var _rapidHide=setInterval(function(){
         bar.setAttribute("data-sku-hidden","1");
       }
     }
-    // ซ่อนแบนเนอร์ทุกตัว (ทุก 50ms)
-    document.querySelectorAll("div").forEach(function(d){
-      var bg=(d.style.background||"");
-      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40){
-        var txt=d.textContent||"";
-        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0||txt.indexOf("\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08")>=0){
-          d.style.display="none";
-        }
-      }
-    });
   }catch(e){}
-},50);
+},100);
 setTimeout(function(){clearInterval(_rapidHide);},15000);
 
 function getUrl(){return(typeof SUPABASE_URL!=="undefined"?SUPABASE_URL:null)||localStorage.getItem("sb_url")||"https://crm-themt-api.themtja.workers.dev";}
@@ -734,42 +729,31 @@ function enhanceParcelStats(){
         var total=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
         _lastParcelTotal=total;
 
-        // Force update with interval
-        if(_forceInterval)clearInterval(_forceInterval);
-        var att=0;
-        _forceInterval=setInterval(function(){
-          var card=null;
-          document.querySelectorAll("div").forEach(function(d){
-            if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)card=d.parentElement;
-          });
-          if(card){
-            var v=card.querySelector("div:nth-child(2)");
-            if(v){v.textContent="\u0e3f"+total.toLocaleString();v.style.color="#8b5cf6";}
-            // Remove old debug labels
-            card.querySelectorAll(".sku-debug").forEach(function(d){d.remove();});
-          }
-          att++;if(att>20)clearInterval(_forceInterval);
-        },500);
-        setTimeout(function(){clearInterval(_forceInterval);},10000);
+        // Update card once — observer will re-run if React overwrites
+        var card=null;
+        document.querySelectorAll("div").forEach(function(d){
+          if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)card=d.parentElement;
+        });
+        if(card){
+          var v=card.querySelector("div:nth-child(2)");
+          if(v){v.textContent="\u0e3f"+total.toLocaleString();v.style.color="#8b5cf6";}
+          card.querySelectorAll(".sku-debug").forEach(function(d){d.remove();});
+        }
       }catch(e){}
     })();
   }catch(e){}
 }
 
-// Clean parcel page — hide all banners, simple design
+// Clean parcel page — hide banners via attribute (CSS handles display:none)
 function enhanceReturnRate(){
   try{
-    // Hide ALL gradient banners (React + custom)
-    document.querySelectorAll("div").forEach(function(d){
-      var bg=(d.style.background||"");
-      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40){
-        var txt=d.textContent||"";
-        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0||txt.indexOf("\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08")>=0){
-          d.style.display="none";
-        }
+    // Mark gradient banners for CSS hiding (setAttribute doesn't trigger infinite observer loop)
+    document.querySelectorAll("div[style*='gradient']").forEach(function(d){
+      var txt=d.textContent||"";
+      if((txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0)&&!d.getAttribute("data-hidden")){
+        d.setAttribute("data-hidden","1");
       }
     });
-    var sb=document.getElementById("sku-banner");if(sb)sb.style.display="none";
 
     // Color cards based on return count
     var returnCount=0;
@@ -777,9 +761,10 @@ function enhanceReturnRate(){
       if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
         var n=d.parentElement.querySelector("div:nth-child(2)");
         if(n)returnCount=parseInt(n.textContent)||0;
-        // Color the card
         d.parentElement.style.borderColor=returnCount===0?"#22c55e":"";
         if(n)n.style.color=returnCount===0?"#22c55e":"";
+        // Remove stale badges
+        if(returnCount===0)d.parentElement.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
       }
       if(d.textContent.trim()==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
         var p=d.parentElement.querySelector("div:nth-child(2)");
@@ -817,15 +802,6 @@ function tidyCodesBar(){
 function startWatch(){
   if(_ob)return;
   _ob=new MutationObserver(function(){
-    // Instant: ซ่อนแบนเนอร์ทันที ไม่ต้องรอ debounce
-    try{document.querySelectorAll("div").forEach(function(d){
-      var bg=(d.style.background||"");
-      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40){
-        var txt=d.textContent||"";
-        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0)d.style.display="none";
-      }
-    });}catch(e){}
-    // Debounced: everything else
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
