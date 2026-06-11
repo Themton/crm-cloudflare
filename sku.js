@@ -12,7 +12,7 @@ if(localStorage.getItem("sku_page_active")==="1"){
   else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
 }
 
-// Immediate: ซ่อนปุ่มรหัสสินค้าเดิม + restore last parcel filter
+// Immediate: ซ่อนปุ่มรหัสสินค้าเดิม + ซ่อนแบนเนอร์ + restore filter
 var _parcelFilterRestored=false;
 var _rapidHide=setInterval(function(){
   try{
@@ -39,6 +39,16 @@ var _rapidHide=setInterval(function(){
         bar.setAttribute("data-sku-hidden","1");
       }
     }
+    // ซ่อนแบนเนอร์ทุกตัว (ทุก 50ms)
+    document.querySelectorAll("div").forEach(function(d){
+      var bg=(d.style.background||"");
+      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40){
+        var txt=d.textContent||"";
+        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0||txt.indexOf("\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08")>=0){
+          d.style.display="none";
+        }
+      }
+    });
   }catch(e){}
 },50);
 setTimeout(function(){clearInterval(_rapidHide);},15000);
@@ -806,7 +816,17 @@ function tidyCodesBar(){
 
 function startWatch(){
   if(_ob)return;
-  _ob=new MutationObserver(function(){if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
+  _ob=new MutationObserver(function(){
+    // Instant: ซ่อนแบนเนอร์ทันที ไม่ต้องรอ debounce
+    try{document.querySelectorAll("div").forEach(function(d){
+      var bg=(d.style.background||"");
+      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40){
+        var txt=d.textContent||"";
+        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0)d.style.display="none";
+      }
+    });}catch(e){}
+    // Debounced: everything else
+    if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
       tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();enhanceReturnRate();}catch(e){}
