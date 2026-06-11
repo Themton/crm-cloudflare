@@ -256,12 +256,144 @@ function renderMgr(){
   };});
 }
 
-// FAB
-function createFAB(){
-  if(document.getElementById("sku-fab"))return;
-  var f=document.createElement("button");f.id="sku-fab";f.type="button";
-  f.style.cssText="position:fixed;bottom:20px;right:20px;z-index:9999;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(217,119,6,.4);display:flex;align-items:center;justify-content:center";
-  f.textContent="\uD83D\uDCE6";f.onclick=openMgr;document.body.appendChild(f);
+// Sidebar menu + full-page product view
+var _skuPageActive=false;
+function injectSidebar(){
+  try{
+    var nav=document.querySelector("nav");
+    if(!nav||nav.querySelector("#sku-nav-btn"))return;
+    // Find a reference button to copy style
+    var refBtn=nav.querySelector("button");
+    if(!refBtn)return;
+    var btn=document.createElement("button");
+    btn.id="sku-nav-btn";
+    btn.type="button";
+    // Copy style from existing nav button
+    var cs=window.getComputedStyle(refBtn);
+    btn.style.cssText="display:flex;align-items:center;gap:8px;width:100%;padding:"+cs.padding+";border:none;background:none;color:"+cs.color+";font-size:"+cs.fontSize+";font-family:inherit;cursor:pointer;border-radius:8px;text-align:left;font-weight:500";
+    btn.innerHTML='<span style="font-size:16px">\uD83D\uDCE6</span> \u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32';
+    btn.onclick=function(){showSkuPage();};
+    // Insert before last items
+    var items=nav.querySelectorAll("button,a");
+    if(items.length>2){nav.insertBefore(btn,items[items.length-2]);}
+    else{nav.appendChild(btn);}
+    // Listen for other nav clicks to deactivate
+    nav.addEventListener("click",function(e){
+      var t=e.target.closest("button,a");
+      if(t&&t!==btn&&_skuPageActive){hideSkuPage();}
+    });
+  }catch(e){}
+}
+
+function showSkuPage(){
+  _skuPageActive=true;
+  // Highlight sidebar button
+  var btn=document.getElementById("sku-nav-btn");
+  if(btn)btn.style.cssText=btn.style.cssText.replace(/background:[^;]*/,"background:rgba(251,191,36,.15)")+";color:#fde68a;font-weight:700";
+  // Deactivate other nav buttons
+  var nav=document.querySelector("nav");
+  if(nav)nav.querySelectorAll("button,a").forEach(function(b){if(b.id!=="sku-nav-btn"){b.style.background="none";b.style.fontWeight="500";}});
+  // Find main content area (right side of sidebar)
+  var root=document.getElementById("root");
+  if(!root)return;
+  var main=root.querySelector("div > div:last-child")||root.children[0];
+  if(!main)return;
+  // Hide existing content
+  for(var i=0;i<main.children.length;i++){
+    if(main.children[i].id!=="sku-page")main.children[i].style.display="none";
+  }
+  // Create or show page
+  var page=document.getElementById("sku-page");
+  if(!page){
+    page=document.createElement("div");
+    page.id="sku-page";
+    page.style.cssText="padding:24px;max-width:800px;animation:fadeIn .2s";
+    main.appendChild(page);
+  }
+  page.style.display="block";
+  renderSkuPage();
+}
+
+function hideSkuPage(){
+  _skuPageActive=false;
+  var btn=document.getElementById("sku-nav-btn");
+  if(btn)btn.style.cssText=btn.style.cssText.replace(/background:[^;]*/,"background:none")+";color:inherit;font-weight:500";
+  var page=document.getElementById("sku-page");
+  if(page)page.style.display="none";
+  // Show original content
+  var root=document.getElementById("root");
+  if(!root)return;
+  var main=root.querySelector("div > div:last-child")||root.children[0];
+  if(!main)return;
+  for(var i=0;i<main.children.length;i++){
+    if(main.children[i].id!=="sku-page")main.children[i].style.display="";
+  }
+}
+
+function renderSkuPage(){
+  var page=document.getElementById("sku-page");
+  if(!page)return;
+  var cats={};CAT.forEach(function(p,i){if(!cats[p.cat])cats[p.cat]=[];cats[p.cat].push({p:p,i:i});});
+  var h='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">';
+  h+='<h1 style="flex:1;font-size:20px;font-weight:800;color:#1e293b;margin:0">\uD83D\uDCE6 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32</h1>';
+  h+='<span style="font-size:14px;color:#78716c">'+CAT.length+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span></div>';
+  // Add form
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:14px;background:#fffbeb;border-radius:12px;border:1px solid #fde68a">';
+  h+='<input id="sp-sku" placeholder="SKU" style="width:80px;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit"/>';
+  h+='<input id="sp-name" placeholder="\u0e0a\u0e37\u0e48\u0e2d\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32" style="flex:2;min-width:120px;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit"/>';
+  h+='<input id="sp-cat" placeholder="\u0e2b\u0e21\u0e27\u0e14" list="sp-dl" style="flex:1;min-width:90px;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit"/>';
+  h+='<datalist id="sp-dl">'+getCats().filter(function(c){return c!=="ALL"}).map(function(c){return'<option value="'+esc(c)+'"/>'}).join("")+'</datalist>';
+  h+='<button id="sp-add" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ \u0e40\u0e1e\u0e34\u0e48\u0e21</button></div>';
+  // Product list
+  Object.keys(cats).forEach(function(cat){
+    h+='<div style="margin-bottom:16px">';
+    h+='<div style="font-size:13px;font-weight:700;color:#92400e;background:#fef3c7;padding:5px 14px;border-radius:8px;margin-bottom:8px;display:inline-block">'+esc(cat)+' <span style="font-weight:400;color:#b45309">('+cats[cat].length+')</span></div>';
+    cats[cat].forEach(function(item){
+      var p=item.p,i=item.i;
+      h+='<div class="sp-row" data-idx="'+i+'" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid #f0f0f0;border-radius:10px;margin-bottom:6px;background:#fff;transition:border-color .15s">';
+      h+='<span style="font-family:monospace;font-size:11px;color:#d97706;background:#fffbeb;padding:3px 10px;border-radius:5px;font-weight:600;min-width:70px;text-align:center">'+esc(p.sku)+'</span>';
+      h+='<span style="flex:1;font-size:14px;color:#1e293b">'+esc(p.name)+'</span>';
+      h+='<button class="sp-edit" data-idx="'+i+'" style="padding:6px 12px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:12px">\u270F\uFE0F \u0e41\u0e01\u0e49\u0e44\u0e02</button>';
+      h+='<button class="sp-del" data-idx="'+i+'" style="padding:6px 12px;border-radius:6px;border:1px solid #fecaca;background:#fef2f2;color:#ef4444;cursor:pointer;font-size:12px">\u0e25\u0e1a</button>';
+      h+='</div>';
+    });
+    h+='</div>';
+  });
+  if(CAT.length===0)h+='<div style="text-align:center;padding:40px;color:#94a3b8;font-size:14px">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 \u2014 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e14\u0e49\u0e32\u0e19\u0e1a\u0e19</div>';
+  page.innerHTML=h;
+  // Bind add
+  var ab=document.getElementById("sp-add");
+  if(ab)ab.onclick=function(){
+    var sku=document.getElementById("sp-sku").value.trim();
+    var name=document.getElementById("sp-name").value.trim();
+    var cat=document.getElementById("sp-cat").value.trim()||"\u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b";
+    if(!sku||!name){alert("\u0e01\u0e23\u0e2d\u0e01 SKU \u0e41\u0e25\u0e30\u0e0a\u0e37\u0e48\u0e2d");return;}
+    if(CMAP[sku]){alert("SKU \u0e0b\u0e49\u0e33");return;}
+    CAT.push({sku:sku,name:name,cat:cat});
+    saveCat().then(function(){renderSkuPage();});
+    document.getElementById("sp-sku").value="";document.getElementById("sp-name").value="";
+  };
+  // Bind delete
+  page.querySelectorAll(".sp-del").forEach(function(b){b.onclick=function(){
+    var i=parseInt(b.getAttribute("data-idx"));
+    if(confirm("\u0e25\u0e1a '"+CAT[i].name+"' ?")){CAT.splice(i,1);saveCat().then(function(){renderSkuPage();});}
+  };});
+  // Bind edit
+  page.querySelectorAll(".sp-edit").forEach(function(b){b.onclick=function(){
+    var i=parseInt(b.getAttribute("data-idx")),p=CAT[i],row=b.closest(".sp-row");if(!row)return;
+    row.innerHTML='<input value="'+esc(p.sku)+'" id="se-s-'+i+'" style="width:70px;padding:6px 10px;border:1.5px solid #fbbf24;border-radius:6px;font-size:12px;font-family:inherit"/>'
+      +'<input value="'+esc(p.name)+'" id="se-n-'+i+'" style="flex:1;padding:6px 10px;border:1.5px solid #fbbf24;border-radius:6px;font-size:12px;font-family:inherit"/>'
+      +'<input value="'+esc(p.cat)+'" id="se-c-'+i+'" list="sp-dl" style="width:100px;padding:6px 10px;border:1.5px solid #fbbf24;border-radius:6px;font-size:12px;font-family:inherit"/>'
+      +'<button id="se-ok-'+i+'" style="padding:6px 14px;border:none;border-radius:6px;background:#22c55e;color:#fff;font-size:12px;cursor:pointer;font-weight:600">\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</button>'
+      +'<button id="se-no-'+i+'" style="padding:6px 14px;border:none;border-radius:6px;background:#e5e7eb;color:#475569;font-size:12px;cursor:pointer">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>';
+    document.getElementById("se-ok-"+i).onclick=function(){
+      var sku=document.getElementById("se-s-"+i).value.trim(),name=document.getElementById("se-n-"+i).value.trim(),cat=document.getElementById("se-c-"+i).value.trim()||"\u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b";
+      if(!sku||!name){alert("\u0e01\u0e23\u0e2d\u0e01\u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a");return;}
+      for(var j=0;j<CAT.length;j++){if(j!==i&&CAT[j].sku===sku){alert("SKU \u0e0b\u0e49\u0e33");return;}}
+      CAT[i]={sku:sku,name:name,cat:cat};saveCat().then(function(){renderSkuPage();});
+    };
+    document.getElementById("se-no-"+i).onclick=function(){renderSkuPage();};
+  };});
 }
 
 // Observer
@@ -286,7 +418,7 @@ function tidyCodesBar(){
     Object.keys(cats).forEach(function(c){
       sum.innerHTML+='<span style="font-size:11px;padding:3px 10px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a;color:#92400e">'+esc(c)+' ('+cats[c]+')</span>';
     });
-    sum.innerHTML+='<button type="button" onclick="document.getElementById(\'sku-fab\').click()" style="font-size:11px;padding:3px 10px;border-radius:6px;background:#d97706;border:none;color:#fff;cursor:pointer;font-family:inherit">\u2699 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23</button>';
+    sum.innerHTML+='<button type="button" onclick="document.getElementById(\'sku-nav-btn\')&&document.getElementById(\'sku-nav-btn\').click()" style="font-size:11px;padding:3px 10px;border-radius:6px;background:#d97706;border:none;color:#fff;cursor:pointer;font-family:inherit">\u2699 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23</button>';
     bar.appendChild(sum);
   }catch(e){}
 }
@@ -296,15 +428,15 @@ function startWatch(){
   _ob=new MutationObserver(function(){if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
-      tidyCodesBar();}catch(e){}
+      tidyCodesBar();injectSidebar();}catch(e){}
   },400);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
 
 async function init(){
-  await loadCat();createFAB();startWatch();
-  setTimeout(function(){try{injectPicker();tidyCodesBar();}catch(e){}},1500);
-  setTimeout(function(){try{injectPicker();tidyCodesBar();}catch(e){}},4000);
+  await loadCat();injectSidebar();startWatch();
+  setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();}catch(e){}},1500);
+  setTimeout(function(){try{injectPicker();tidyCodesBar();injectSidebar();}catch(e){}},4000);
   console.log("[SKU] v3 loaded "+CAT.length+" products");
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(init,500);});
