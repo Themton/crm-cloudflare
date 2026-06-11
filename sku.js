@@ -761,8 +761,11 @@ function enhanceReturnRate(){
     document.querySelectorAll("div").forEach(function(d){
       if(d.id==="sku-banner")return;
       var bg=(d.style.background||"");
-      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0)){
-        d.style.display="none";
+      if(bg.indexOf("gradient")>=0&&d.offsetHeight>40){
+        var txt=d.textContent||"";
+        if(txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0){
+          d.style.display="none";
+        }
       }
     });
 
