@@ -77,32 +77,48 @@ async function saveCat(){
 function getCats(){ var c=["ทั้งหมด"]; CAT.forEach(function(p){if(c.indexOf(p.cat)<0)c.push(p.cat);}); return c; }
 
 // ── React field helpers ──
-// ── React field helpers (robust — ใช้ได้กับ React 18 production) ──
+// ── React field helpers (bulletproof — ใช้ได้กับ React 18 production) ──
 function triggerReactChange(el,val){
   try{
-    // Method 1: React internal props — เรียก onChange ตรง
+    // Method 1: execCommand — จำลองการพิมพ์จริง React รับ 100%
+    el.focus();
+    if(el.select) el.select();
+    else if(el.setSelectionRange) el.setSelectionRange(0,el.value?el.value.length:99999);
+    if(document.execCommand("insertText",false,val)){
+      return; // success
+    }
+  }catch(e){}
+  try{
+    // Method 2: React __reactProps onChange
     var propsKey=Object.keys(el).find(function(k){return k.startsWith("__reactProps");});
     if(propsKey && el[propsKey] && el[propsKey].onChange){
-      el[propsKey].onChange({target:{value:val}});
+      // Set DOM value first
+      el.value=val;
+      el[propsKey].onChange({target:el,currentTarget:el});
       return;
     }
-    // Method 2: React fiber event handlers
+  }catch(e){}
+  try{
+    // Method 3: Walk React fiber tree
     var fiberKey=Object.keys(el).find(function(k){return k.startsWith("__reactFiber")||k.startsWith("__reactInternalInstance");});
     if(fiberKey){
       var fiber=el[fiberKey];
       while(fiber){
         if(fiber.memoizedProps && fiber.memoizedProps.onChange){
-          fiber.memoizedProps.onChange({target:{value:val}});
+          el.value=val;
+          fiber.memoizedProps.onChange({target:el,currentTarget:el});
           return;
         }
         fiber=fiber.return;
       }
     }
-    // Method 3: Native setter + events (fallback)
+  }catch(e){}
+  try{
+    // Method 4: Native setter + InputEvent
     var proto=el.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
     var setter=Object.getOwnPropertyDescriptor(proto,"value").set;
     setter.call(el,val);
-    el.dispatchEvent(new Event("input",{bubbles:true}));
+    el.dispatchEvent(new InputEvent("input",{bubbles:true,data:val,inputType:"insertText"}));
     el.dispatchEvent(new Event("change",{bubbles:true}));
   }catch(e){}
 }
@@ -142,15 +158,27 @@ function syncFormFromCart(){
   });
 
   // Find Remark field — ใช้เป็นช่องแจ้งสินค้า (auto-fill เสมอ)
-  // ค้นหาทั้ง textarea และ input
   var remarkField=null;
-  document.querySelectorAll("textarea,input").forEach(function(el){
+  // วิธี 1: หาจาก placeholder
+  document.querySelectorAll("textarea,input[type='text'],input:not([type])").forEach(function(el){
     if(remarkField) return;
-    var ph=(el.placeholder||"").toLowerCase();
-    if(ph.indexOf("สินค้า")>=0 || ph.indexOf("จำนวน")>=0){
-      remarkField=el;
-    }
+    var ph=(el.placeholder||"");
+    if(ph.indexOf("สินค้า")>=0 || ph.indexOf("จำนวน")>=0) remarkField=el;
   });
+  // วิธี 2: หาจาก label "หมายเหตุ"
+  if(!remarkField){
+    document.querySelectorAll("label").forEach(function(lb){
+      if(remarkField) return;
+      var t=(lb.textContent||"");
+      if(t.indexOf("หมายเหตุ")>=0){
+        var parent=lb.parentElement;
+        if(parent){
+          var field=parent.querySelector("textarea")||parent.querySelector("input[type='text']")||parent.querySelector("input:not([type])");
+          if(field) remarkField=field;
+        }
+      }
+    });
+  }
   if(remarkField){
     var txt=items.length>0 ? items.join(", ") : "";
     triggerReactChange(remarkField,txt);
