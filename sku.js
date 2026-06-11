@@ -554,6 +554,74 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
+// Inject "เดือนก่อน" button into parcel check filter
+function injectPrevMonthBtn(){
+  try{
+    // Find the filter bar by looking for "ช่วงเวลา" text
+    var filterBar=null;
+    document.querySelectorAll("span,div").forEach(function(el){
+      if((el.textContent||"").trim()==="\uD83D\uDCC5 \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32:"&&el.parentElement)filterBar=el.parentElement;
+    });
+    if(!filterBar||filterBar.querySelector("#sku-prev-month"))return;
+
+    // Find "เมื่อวาน" button to insert after it
+    var yesterdayBtn=null;
+    filterBar.querySelectorAll("button").forEach(function(b){
+      if((b.textContent||"").trim()==="\u0e40\u0e21\u0e37\u0e48\u0e2d\u0e27\u0e32\u0e19")yesterdayBtn=b;
+    });
+
+    // Create "เดือนก่อน" button
+    var btn=document.createElement("button");
+    btn.id="sku-prev-month";
+    btn.type="button";
+    btn.textContent="\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e01\u0e48\u0e2d\u0e19";
+    btn.style.cssText="padding:6px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+    btn.onclick=function(){
+      // Click "เลือกเดือน" button first
+      filterBar.querySelectorAll("button").forEach(function(b){
+        if((b.textContent||"").trim()==="\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e14\u0e37\u0e2d\u0e19")b.click();
+      });
+      // Set month input to previous month
+      setTimeout(function(){
+        var now=new Date();
+        now.setMonth(now.getMonth()-1);
+        var prevYM=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+        var monthInput=document.querySelector("input[type='month']");
+        if(monthInput){
+          var nativeSet=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set;
+          nativeSet.call(monthInput,prevYM);
+          monthInput.dispatchEvent(new Event("input",{bubbles:true}));
+          monthInput.dispatchEvent(new Event("change",{bubbles:true}));
+          // Also try React props
+          try{
+            var pk=Object.keys(monthInput).find(function(k){return k.startsWith("__reactProps");});
+            if(pk&&monthInput[pk]&&monthInput[pk].onChange){
+              monthInput.value=prevYM;
+              monthInput[pk].onChange({target:monthInput});
+            }
+          }catch(e){}
+        }
+        // Style this button as active
+        btn.style.border="2px solid #d97706";
+        btn.style.background="#fef3c7";
+        btn.style.color="#92400e";
+      },100);
+    };
+
+    // Insert after "เมื่อวาน" or "7 วัน"
+    var sevenBtn=null;
+    filterBar.querySelectorAll("button").forEach(function(b){
+      if((b.textContent||"").trim()==="7 \u0e27\u0e31\u0e19")sevenBtn=b;
+    });
+    var ref=sevenBtn||yesterdayBtn;
+    if(ref&&ref.nextSibling){
+      ref.parentNode.insertBefore(btn,ref.nextSibling);
+    }else{
+      filterBar.appendChild(btn);
+    }
+  }catch(e){}
+}
+
 // Enhance parcel stats — replace COD card with orders-based calculation
 var _lastParcelMonth="";
 var _lastParcelTotal=-1;
@@ -691,7 +759,7 @@ function startWatch(){
   _ob=new MutationObserver(function(){if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
-      tidyCodesBar();injectSidebar();enhanceParcelStats();}catch(e){}
+      tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();}catch(e){}
   },400);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
