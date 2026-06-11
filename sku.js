@@ -746,10 +746,9 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Enhance return rate — single banner, change color/text only
+// Enhance return rate — single persistent banner
 function enhanceReturnRate(){
   try{
-    // Find return card for count
     var returnCard=null,rateCard=null,totalCard=null;
     document.querySelectorAll("div").forEach(function(d){
       var t=d.textContent.trim();
@@ -757,6 +756,7 @@ function enhanceReturnRate(){
       if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
       if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement)totalCard=d.parentElement;
     });
+    if(!totalCard)return;
 
     var returnCount=0,totalCount=0;
     if(returnCard){var n=returnCard.querySelector("div:nth-child(2)");if(n)returnCount=parseInt(n.textContent)||0;}
@@ -765,42 +765,36 @@ function enhanceReturnRate(){
     // Hide React's original banner
     document.querySelectorAll("div").forEach(function(d){
       var bg=(d.style.background||"");
-      if(bg.indexOf("gradient")>=0&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0)&&!d.id){
+      if(bg.indexOf("gradient")>=0&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0)&&d.id!=="sku-banner"){
         d.style.display="none";
       }
     });
 
-    // Find or create our single banner
+    // Always ensure our banner exists — re-insert if React removed it
     var banner=document.getElementById("sku-banner");
+    var statsRow=totalCard.parentElement;
     if(!banner){
-      var statsRow=totalCard?totalCard.parentElement:null;
-      if(!statsRow)return;
       banner=document.createElement("div");
       banner.id="sku-banner";
       banner.style.cssText="border-radius:12px;margin:16px 0;overflow:hidden";
+    }
+    // Re-insert if not in DOM
+    if(!document.body.contains(banner)&&statsRow){
       try{statsRow.after(banner);}catch(e){if(statsRow.parentNode)statsRow.parentNode.insertBefore(banner,statsRow.nextSibling);}
     }
 
-    // Get COD loss from enhanceParcelStats badge
     var codLoss=0;
-    if(returnCard){
-      var badge=returnCard.querySelector(".sku-return-cod");
-      if(badge)codLoss=parseInt((badge.textContent||"").replace(/[^\d]/g,""))||0;
-    }
+    if(returnCard){var badge=returnCard.querySelector(".sku-return-cod");if(badge)codLoss=parseInt((badge.textContent||"").replace(/[^\d]/g,""))||0;}
 
     if(returnCount===0){
-      // GREEN
       banner.style.background="linear-gradient(135deg,#065f46,#047857)";
       banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#a7f3d0">0%</div><div style="font-size:11px;color:#a7f3d0">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
-      // Green cards
       if(returnCard){returnCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});returnCard.style.borderColor="#22c55e";var nn=returnCard.querySelector("div:nth-child(2)");if(nn)nn.style.color="#22c55e";}
       if(rateCard){rateCard.style.borderColor="#22c55e";var pp=rateCard.querySelector("div:nth-child(2)");if(pp)pp.style.color="#22c55e";}
     }else{
-      // RED
       var pct=totalCount>0?Math.round(returnCount/totalCount*100):0;
       banner.style.background="linear-gradient(135deg,#dc2626,#b91c1c)";
       banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u26A0\uFE0F</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19! \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a '+pct+'%</div><div style="font-size:13px;color:#fecaca;margin-top:4px">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a '+returnCount+' \u0e08\u0e32\u0e01 '+totalCount+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23'+(codLoss>0?' \u00b7 COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f'+codLoss.toLocaleString():'')+'</div><div style="font-size:11px;color:#fecaca;margin-top:2px">\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e41\u0e25\u0e30\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e01\u0e48\u0e2d\u0e19\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#fecaca">'+pct+'%</div><div style="font-size:11px;color:#fecaca">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
-      // Reset card styles
       if(returnCard)returnCard.style.borderColor="";
       if(rateCard)rateCard.style.borderColor="";
     }
