@@ -12,10 +12,20 @@ if(localStorage.getItem("sku_page_active")==="1"){
   else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
 }
 
-// CSS: ซ่อนแบนเนอร์ตีกลับ + ปุ่มรหัสสินค้า ผ่าน CSS (ไม่ trigger MutationObserver)
+// CSS: ซ่อนแบนเนอร์ + ปุ่มรหัสสินค้า ผ่าน CSS (ทันที ไม่ flash)
 var _skuStyle=document.createElement("style");
 _skuStyle.id="sku-css";
-_skuStyle.textContent='[data-hidden="1"]{position:absolute!important;left:-9999px!important;opacity:0!important;height:0!important;overflow:hidden!important}';
+_skuStyle.textContent=[
+  '[data-hidden="1"]{position:absolute!important;left:-9999px!important;opacity:0!important;height:0!important;overflow:hidden!important}',
+  // ซ่อนแบนเนอร์ตีกลับทุกสี (CSS attribute selector on inline style)
+  'div[style*="gradient"][style*="dc2626"]{display:none!important}',
+  'div[style*="gradient"][style*="ef4444"]{display:none!important}',
+  'div[style*="gradient"][style*="b91c1c"]{display:none!important}',
+  'div[style*="gradient"][style*="d97706"]{display:none!important}',
+  'div[style*="gradient"][style*="b45309"]{display:none!important}',
+  'div[style*="gradient"][style*="92400e"]{display:none!important}',
+  'div[style*="gradient"][style*="78350f"]{display:none!important}'
+].join("\n");
 (document.head||document.documentElement).appendChild(_skuStyle);
 
 // Lightweight rapid hide — ไม่สแกน div ทั้งหมด แค่ mark elements
@@ -753,18 +763,9 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Clean parcel page — hide banners via attribute (CSS handles display:none)
+// Clean parcel page — cards only (CSS hides banners automatically)
 function enhanceReturnRate(){
   try{
-    // Mark gradient banners for CSS hiding (setAttribute doesn't trigger infinite observer loop)
-    document.querySelectorAll("div[style*='gradient']").forEach(function(d){
-      var txt=d.textContent||"";
-      if((txt.indexOf("\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0||txt.indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0)&&!d.getAttribute("data-hidden")){
-        d.setAttribute("data-hidden","1");
-      }
-    });
-
-    // Color cards based on return count
     var returnCount=0;
     document.querySelectorAll("div").forEach(function(d){
       if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
@@ -772,7 +773,6 @@ function enhanceReturnRate(){
         if(n)returnCount=parseInt(n.textContent)||0;
         d.parentElement.style.borderColor=returnCount===0?"#22c55e":"";
         if(n)n.style.color=returnCount===0?"#22c55e":"";
-        // Remove stale badges
         if(returnCount===0)d.parentElement.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
       }
       if(d.textContent.trim()==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement){
