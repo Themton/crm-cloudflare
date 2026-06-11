@@ -746,76 +746,63 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
-// Enhance return rate — green when 0 returns, keep banner always visible
+// Enhance return rate — single banner, change color/text only
 function enhanceReturnRate(){
   try{
-    // Find return card
-    var returnCard=null,rateCard=null;
+    // Find return card for count
+    var returnCard=null,rateCard=null,totalCard=null;
     document.querySelectorAll("div").forEach(function(d){
       var t=d.textContent.trim();
       if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
       if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
+      if(t==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement)totalCard=d.parentElement;
     });
 
-    var returnCount=0;
-    if(returnCard){
-      var numEl=returnCard.querySelector("div:nth-child(2)");
-      if(numEl)returnCount=parseInt(numEl.textContent)||0;
+    var returnCount=0,totalCount=0;
+    if(returnCard){var n=returnCard.querySelector("div:nth-child(2)");if(n)returnCount=parseInt(n.textContent)||0;}
+    if(totalCard){var n2=totalCard.querySelector("div:nth-child(2)");if(n2)totalCount=parseInt(n2.textContent)||0;}
+
+    // Hide React's original banner
+    document.querySelectorAll("div").forEach(function(d){
+      var bg=(d.style.background||"");
+      if(bg.indexOf("gradient")>=0&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0)&&!d.id){
+        d.style.display="none";
+      }
+    });
+
+    // Find or create our single banner
+    var banner=document.getElementById("sku-banner");
+    if(!banner){
+      var statsRow=totalCard?totalCard.parentElement:null;
+      if(!statsRow)return;
+      banner=document.createElement("div");
+      banner.id="sku-banner";
+      banner.style.cssText="border-radius:12px;margin:16px 0;overflow:hidden";
+      try{statsRow.after(banner);}catch(e){if(statsRow.parentNode)statsRow.parentNode.insertBefore(banner,statsRow.nextSibling);}
     }
 
-    // Find banner (red gradient)
-    var banner=null;
-    document.querySelectorAll("div").forEach(function(d){
-      var bg=(d.style.background||d.style.backgroundImage||"");
-      if(bg.indexOf("gradient")>=0&&(bg.indexOf("dc2626")>=0||bg.indexOf("ef4444")>=0||bg.indexOf("b91c1c")>=0||bg.indexOf("065f46")>=0)){
-        banner=d;
-      }
-    });
+    // Get COD loss from enhanceParcelStats badge
+    var codLoss=0;
+    if(returnCard){
+      var badge=returnCard.querySelector(".sku-return-cod");
+      if(badge)codLoss=parseInt((badge.textContent||"").replace(/[^\d]/g,""))||0;
+    }
 
     if(returnCount===0){
-      // Remove stale badges
-      if(returnCard){
-        returnCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
-        returnCard.style.borderColor="#22c55e";
-        var n=returnCard.querySelector("div:nth-child(2)");
-        if(n)n.style.color="#22c55e";
-      }
-      if(rateCard){
-        rateCard.style.borderColor="#22c55e";
-        var p=rateCard.querySelector("div:nth-child(2)");
-        if(p)p.style.color="#22c55e";
-      }
-      // Find or create banner
-      if(banner){
-        // Existing banner — change to green
-        banner.style.background="linear-gradient(135deg,#065f46,#047857)";
-        if(!banner.getAttribute("data-sku-green")){
-          banner.setAttribute("data-sku-green","1");
-          banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#a7f3d0">0%</div><div style="font-size:11px;color:#a7f3d0;margin-top:2px">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
-        }
-      }else if(!document.getElementById("sku-green-banner")){
-        // No banner exists — create green one after stats row
-        var statsRow=returnCard?returnCard.parentElement:null;
-        if(!statsRow){
-          // Try finding stats row by looking for "ทั้งหมด" card
-          document.querySelectorAll("div").forEach(function(d){
-            if(d.textContent.trim()==="\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14"&&d.parentElement&&d.parentElement.parentElement)statsRow=d.parentElement.parentElement;
-          });
-        }
-        if(statsRow){
-          var gb=document.createElement("div");
-          gb.id="sku-green-banner";
-          gb.style.cssText="background:linear-gradient(135deg,#065f46,#047857);border-radius:12px;margin:16px 0;overflow:hidden";
-          gb.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#a7f3d0">0%</div><div style="font-size:11px;color:#a7f3d0;margin-top:2px">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
-          try{statsRow.after(gb);}catch(e){statsRow.parentNode.appendChild(gb);}
-        }
-      }
+      // GREEN
+      banner.style.background="linear-gradient(135deg,#065f46,#047857)";
+      banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#a7f3d0">0%</div><div style="font-size:11px;color:#a7f3d0">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
+      // Green cards
+      if(returnCard){returnCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});returnCard.style.borderColor="#22c55e";var nn=returnCard.querySelector("div:nth-child(2)");if(nn)nn.style.color="#22c55e";}
+      if(rateCard){rateCard.style.borderColor="#22c55e";var pp=rateCard.querySelector("div:nth-child(2)");if(pp)pp.style.color="#22c55e";}
     }else{
-      // Has returns — reset card styles, React handles banner
+      // RED
+      var pct=totalCount>0?Math.round(returnCount/totalCount*100):0;
+      banner.style.background="linear-gradient(135deg,#dc2626,#b91c1c)";
+      banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u26A0\uFE0F</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19! \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a '+pct+'%</div><div style="font-size:13px;color:#fecaca;margin-top:4px">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a '+returnCount+' \u0e08\u0e32\u0e01 '+totalCount+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23'+(codLoss>0?' \u00b7 COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f'+codLoss.toLocaleString():'')+'</div><div style="font-size:11px;color:#fecaca;margin-top:2px">\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e41\u0e25\u0e30\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e01\u0e48\u0e2d\u0e19\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07</div></div><div style="margin-left:auto;background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center"><div style="font-size:32px;font-weight:800;color:#fecaca">'+pct+'%</div><div style="font-size:11px;color:#fecaca">\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a</div></div></div>';
+      // Reset card styles
       if(returnCard)returnCard.style.borderColor="";
       if(rateCard)rateCard.style.borderColor="";
-      if(banner)banner.removeAttribute("data-sku-green");
-      var gb=document.getElementById("sku-green-banner");if(gb)gb.remove();
     }
   }catch(e){}
 }
