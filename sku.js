@@ -235,7 +235,7 @@ function openMgr(){
     if(!sku||!name){alert("\u0e01\u0e23\u0e2d\u0e01 SKU \u0e41\u0e25\u0e30\u0e0a\u0e37\u0e48\u0e2d");return;}
     if(CMAP[sku]){alert("SKU \u0e0b\u0e49\u0e33");return;}
     CAT.push({sku:sku,name:name,cat:cat});
-    saveCat().then(function(){renderMgr();});
+    renderMgr();saveCat();
     document.getElementById("sku-a-sku").value="";document.getElementById("sku-a-name").value="";
   };
   renderMgr();
@@ -258,7 +258,7 @@ function renderMgr(){
   });
   if(CAT.length===0)h='<div style="text-align:center;padding:30px;color:#94a3b8">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32</div>';
   body.innerHTML=h;
-  body.querySelectorAll(".sku-md").forEach(function(b){b.onclick=function(){var i=parseInt(b.getAttribute("data-idx"));if(confirm("\u0e25\u0e1a '"+CAT[i].name+"' ?")){CAT.splice(i,1);saveCat().then(function(){renderMgr();});}};});
+  body.querySelectorAll(".sku-md").forEach(function(b){b.onclick=function(){var i=parseInt(b.getAttribute("data-idx"));if(confirm("\u0e25\u0e1a '"+CAT[i].name+"' ?")){CAT.splice(i,1);renderMgr();saveCat();}};});
   body.querySelectorAll(".sku-me").forEach(function(b){b.onclick=function(){
     var i=parseInt(b.getAttribute("data-idx")),p=CAT[i],row=b.closest("[data-idx]");if(!row)return;
     row.innerHTML='<input value="'+esc(p.sku)+'" id="se-s-'+i+'" style="width:65px;padding:5px;border:1px solid #e5e7eb;border-radius:5px;font-size:11px;font-family:inherit"/>'
@@ -270,7 +270,7 @@ function renderMgr(){
       var sku=document.getElementById("se-s-"+i).value.trim(),name=document.getElementById("se-n-"+i).value.trim(),cat=document.getElementById("se-c-"+i).value.trim()||"\u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b";
       if(!sku||!name){alert("\u0e01\u0e23\u0e2d\u0e01\u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a");return;}
       for(var j=0;j<CAT.length;j++){if(j!==i&&CAT[j].sku===sku){alert("SKU \u0e0b\u0e49\u0e33");return;}}
-      CAT[i]={sku:sku,name:name,cat:cat};saveCat().then(function(){renderMgr();});
+      CAT[i]={sku:sku,name:name,cat:cat};renderMgr();saveCat();
     };
     document.getElementById("se-no-"+i).onclick=function(){renderMgr();};
   };});
@@ -372,13 +372,13 @@ function renderSkuPage(){
     if(!sku||!name){alert("\u0e01\u0e23\u0e2d\u0e01 SKU \u0e41\u0e25\u0e30\u0e0a\u0e37\u0e48\u0e2d");return;}
     if(CMAP[sku]){alert("SKU \u0e0b\u0e49\u0e33");return;}
     CAT.push({sku:sku,name:name,cat:cat});
-    saveCat().then(function(){renderSkuPage();});
+    renderSkuPage();saveCat();
     document.getElementById("sp-sku").value="";document.getElementById("sp-name").value="";
   };
   // Bind delete
   page.querySelectorAll(".sp-del").forEach(function(b){b.onclick=function(){
     var i=parseInt(b.getAttribute("data-idx"));
-    if(confirm("\u0e25\u0e1a '"+CAT[i].name+"' ?")){CAT.splice(i,1);saveCat().then(function(){renderSkuPage();});}
+    if(confirm("\u0e25\u0e1a '"+CAT[i].name+"' ?")){CAT.splice(i,1);renderSkuPage();saveCat();}
   };});
   // Bind edit
   page.querySelectorAll(".sp-edit").forEach(function(b){b.onclick=function(){
@@ -392,7 +392,7 @@ function renderSkuPage(){
       var sku=document.getElementById("se-s-"+i).value.trim(),name=document.getElementById("se-n-"+i).value.trim(),cat=document.getElementById("se-c-"+i).value.trim()||"\u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b";
       if(!sku||!name){alert("\u0e01\u0e23\u0e2d\u0e01\u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a");return;}
       for(var j=0;j<CAT.length;j++){if(j!==i&&CAT[j].sku===sku){alert("SKU \u0e0b\u0e49\u0e33");return;}}
-      CAT[i]={sku:sku,name:name,cat:cat};saveCat().then(function(){renderSkuPage();});
+      CAT[i]={sku:sku,name:name,cat:cat};renderSkuPage();saveCat();
     };
     document.getElementById("se-no-"+i).onclick=function(){renderSkuPage();};
   };});
