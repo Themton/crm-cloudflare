@@ -835,42 +835,28 @@ function enhanceHRPage(){
     // HR access control — hide non-telesale sections on employee page
     var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
     if(_user&&_user.role==="hr"){
-      // ซ่อนส่วนที่ HR ไม่ควรเห็น — scan ทุก element หา section header
       var hideKeys=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"];
-      var allDivs=document.querySelectorAll("div");
-      allDivs.forEach(function(d){
-        if(d.getAttribute("data-hr-done"))return;
-        var txt=(d.textContent||"").trim();
-        // ต้องเป็นส่วนหัว section: มีคำ "คน" + หนึ่งใน hideKeys + ไม่ใช่ container ใหญ่
-        var isSection=false;var isHR=false;
-        if(txt.indexOf("\u0e04\u0e19")>=0&&d.childElementCount<=3){
-          for(var i=0;i<hideKeys.length;i++){if(txt.indexOf(hideKeys[i])>=0){isSection=true;break;}}
-          if(!isSection&&/^.{0,3}HR\s/.test(txt))isHR=true;
-        }
-        if(!isSection&&!isHR)return;
-        // Check if this looks like a section header (has colored bg via computed style)
+      // Inject CSS once
+      if(!document.getElementById("hr-hide-css")){
+        var s=document.createElement("style");s.id="hr-hide-css";
+        s.textContent='[data-hr-hide]{display:none!important}';
+        document.head.appendChild(s);
+      }
+      // Find section headers by colored bg + "คน" text
+      document.querySelectorAll("div").forEach(function(d){
         var bg=window.getComputedStyle(d).backgroundColor;
-        if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent")return;
-        d.setAttribute("data-hr-done","1");
-        d.style.display="none";
-        // Hide siblings until next section header with colored bg
-        var sib=d.nextElementSibling;
-        while(sib){
-          var sibBg=window.getComputedStyle(sib).backgroundColor;
-          var sibText=(sib.textContent||"");
-          if(sibBg!=="rgba(0, 0, 0, 0)"&&sibBg!=="transparent"&&sibText.indexOf("\u0e04\u0e19")>=0)break;
-          if(isHR){
-            // HR section: keep own account visible
-            if(sibText.indexOf(_user.username||"NOMATCH")>=0){sib=sib.nextElementSibling;continue;}
-          }
-          sib.style.display="none";
-          sib=sib.nextElementSibling;
-        }
-      });
-      // Also hide "เพิ่มหลายคน" and "+เพิ่ม" buttons for HR
-      document.querySelectorAll("button").forEach(function(b){
-        var t=(b.textContent||"").trim();
-        if(t.indexOf("\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2b\u0e25\u0e32\u0e22\u0e04\u0e19")>=0||t==="+ \u0e40\u0e1e\u0e34\u0e48\u0e21"){}
+        if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg==="rgb(255, 255, 255)")return;
+        var txt=(d.textContent||"").trim();
+        if(txt.indexOf("\u0e04\u0e19")<0)return;
+        if(d.childElementCount>5)return;
+        // Check if this section should be hidden
+        var shouldHide=false;
+        for(var i=0;i<hideKeys.length;i++){if(txt.indexOf(hideKeys[i])>=0){shouldHide=true;break;}}
+        if(/^.{0,4}HR\s/.test(txt))shouldHide=true;
+        if(!shouldHide)return;
+        // Hide the parent wrapper (section container = header + rows)
+        var wrapper=d.parentElement;
+        if(wrapper)wrapper.setAttribute("data-hr-hide","1");
       });
     }
 
