@@ -746,6 +746,63 @@ function enhanceParcelStats(){
   }catch(e){}
 }
 
+// Enhance return rate — green when 0 returns
+function enhanceReturnRate(){
+  try{
+    // Find ส่งคืน/ตีกลับ card
+    var returnCard=null;
+    document.querySelectorAll("div").forEach(function(d){
+      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
+    });
+    // Find อัตราตีกลับ card
+    var rateCard=null;
+    document.querySelectorAll("div").forEach(function(d){
+      if(d.textContent.trim()==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
+    });
+    // Find alert banner
+    var banner=null;
+    document.querySelectorAll("div").forEach(function(d){
+      if((d.textContent||"").indexOf("\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0&&(d.style.background||"").indexOf("gradient")>=0)banner=d;
+      if((d.textContent||"").indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0&&d.style.borderRadius)banner=d;
+    });
+
+    // Check if returns = 0
+    var returnCount=0;
+    if(returnCard){
+      var numEl=returnCard.querySelector("div:nth-child(2)");
+      if(numEl)returnCount=parseInt(numEl.textContent)||0;
+    }
+
+    if(returnCount===0){
+      // Make return card green
+      if(returnCard&&!returnCard.getAttribute("data-sku-green")){
+        returnCard.setAttribute("data-sku-green","1");
+        returnCard.style.borderColor="#22c55e";
+        var numEl=returnCard.querySelector("div:nth-child(2)");
+        if(numEl)numEl.style.color="#22c55e";
+      }
+      // Make rate card green
+      if(rateCard&&!rateCard.getAttribute("data-sku-green")){
+        rateCard.setAttribute("data-sku-green","1");
+        rateCard.style.borderColor="#22c55e";
+        var pctEl=rateCard.querySelector("div:nth-child(2)");
+        if(pctEl)pctEl.style.color="#22c55e";
+      }
+      // Replace banner with green success
+      if(banner&&!banner.getAttribute("data-sku-green")){
+        banner.setAttribute("data-sku-green","1");
+        banner.style.background="linear-gradient(135deg,#065f46,#047857)";
+        banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;font-size:36px;font-weight:800;color:#a7f3d0">0%</div></div>';
+      }
+    }else{
+      // Reset green state if returns > 0
+      if(returnCard)returnCard.removeAttribute("data-sku-green");
+      if(rateCard)rateCard.removeAttribute("data-sku-green");
+      if(banner)banner.removeAttribute("data-sku-green");
+    }
+  }catch(e){}
+}
+
 function tidyCodesBar(){
   try{
     var inp=document.getElementById("_newPC");
@@ -775,7 +832,7 @@ function startWatch(){
   _ob=new MutationObserver(function(){if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
-      tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();}catch(e){}
+      tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();enhanceReturnRate();}catch(e){}
   },400);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
