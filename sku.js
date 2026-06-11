@@ -616,7 +616,14 @@ function enhanceParcelStats(){
           var t=(td.textContent||"").trim();
           var dm=t.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
           if(dm){
-            var yr=dm[3].length===2?"20"+dm[3]:dm[3];
+            var yr=dm[3];
+            if(yr.length===2){
+              var n=parseInt(yr);
+              // Thai Buddhist era: 69 = 2569 BE = 2026 CE
+              yr=n>40?String(n+1957):("20"+yr);
+            }else if(parseInt(yr)>2500){
+              yr=String(parseInt(yr)-543); // 2569 → 2026
+            }
             ym=yr+"-"+dm[2];
           }
           var dm2=t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
