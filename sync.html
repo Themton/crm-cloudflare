@@ -6,214 +6,187 @@
 <title>Sync Supabase → D1</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f7;min-height:100vh;padding:24px}
-.wrap{max-width:800px;margin:0 auto}
-h1{font-size:22px;font-weight:800;color:#1e293b;margin-bottom:8px}
-.sub{font-size:13px;color:#94a3b8;margin-bottom:24px}
-.card{background:#fff;border-radius:12px;border:1.5px solid #e2e8f0;padding:20px;margin-bottom:16px}
-.card h2{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.row{display:flex;gap:12px;margin-bottom:12px;align-items:center}
-.row label{font-size:12px;color:#64748b;min-width:80px}
-.row input{flex:1;padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;font-family:monospace}
-.btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.btn-purple{background:#8b5cf6;color:#fff}.btn-purple:hover{background:#7c3aed}
-.btn-blue{background:#2563eb;color:#fff}.btn-blue:hover{background:#1d4ed8}
-.btn-green{background:#059669;color:#fff}.btn-green:hover{background:#047857}
-.btn-gray{background:#e5e7eb;color:#475569}.btn-gray:hover{background:#d1d5db}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;padding:24px}
+.wrap{max-width:750px;margin:0 auto}
+h1{color:#3b82f6;font-size:22px;margin-bottom:8px}
+.sub{color:#94a3b8;font-size:14px;margin-bottom:24px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{font-size:16px;margin-bottom:12px;color:#f59e0b}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;font-weight:600}
+.field input{width:100%;background:#334155;color:#f1f5f9;border:1px solid #475569;border-radius:6px;padding:10px 14px;font-size:14px;outline:none}
+.field input:focus{border-color:#3b82f6}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.btn{border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.tables{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
-.tbl{padding:12px;border-radius:8px;border:1px solid #e2e8f0}
-.tbl h3{font-size:13px;font-weight:600;margin-bottom:8px;color:#1e293b}
-.tbl .cnt{font-size:24px;font-weight:700}
-.tbl .cnt.sb{color:#3ECF8E}
-.tbl .cnt.d1{color:#f6821f}
-.tbl .lbl{font-size:11px;color:#94a3b8;margin-top:2px}
-.log{background:#1e293b;border-radius:8px;padding:16px;color:#e2e8f0;font-size:12px;font-family:monospace;max-height:400px;overflow-y:auto;margin-top:12px;white-space:pre-wrap;line-height:1.6}
-.log .ok{color:#4ade80}.log .err{color:#f87171}.log .info{color:#60a5fa}.log .warn{color:#fbbf24}
-.progress{height:6px;background:#e2e8f0;border-radius:3px;margin:12px 0;overflow:hidden}
-.progress-bar{height:100%;background:#8b5cf6;border-radius:3px;transition:width .3s;width:0}
-.sync-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px}
-.sync-row .name{font-size:14px;font-weight:600;flex:1}
-.sync-row .counts{font-size:12px;color:#64748b}
-.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
-.badge-sb{background:#d1fae5;color:#065f46}
-.badge-d1{background:#fff7ed;color:#9a3412}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-purple{background:#8b5cf6;color:#fff}
+.btn-green{background:#059669;color:#fff}
+.btn-amber{background:#d97706;color:#fff}
+.log{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;max-height:500px;overflow-y:auto;font-family:monospace;font-size:12px;line-height:1.6;margin-top:12px}
+.log .ok{color:#10b981}.log .err{color:#ef4444}.log .info{color:#3b82f6}.log .warn{color:#f59e0b}
+.progress{background:#334155;border-radius:6px;height:8px;margin:12px 0;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#2563eb,#8b5cf6);border-radius:6px;transition:width .3s;width:0}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>🔄 Sync Supabase → Cloudflare D1</h1>
-<p class="sub">ดึงข้อมูลจาก Supabase เดิม มาเพิ่มใน Cloudflare D1</p>
+<h1>🔄 Sync Supabase → D1</h1>
+<p class="sub">ซิงค์ข้อมูลจาก Supabase เดิม มายัง Cloudflare D1</p>
 
 <div class="card">
-<h2>⚙️ การเชื่อมต่อ</h2>
-<div class="row">
-<label>Supabase URL</label>
-<input id="sb-url" value="https://sfwbzcrvesbeymvlsxsu.supabase.co">
-</div>
-<div class="row">
-<label>Supabase Key</label>
-<input id="sb-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmd2J6Y3J2ZXNiZXltdmxzeHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTMzNTgsImV4cCI6MjA4ODkyOTM1OH0.E4Zvq43f0M29hAZzKg78W9HRpthv0I9U37LDo_0Pyvo">
-</div>
-<div class="row">
-<label>D1 Worker</label>
-<input id="d1-url" value="https://crm-themt-api.themtja.workers.dev">
-</div>
-<div class="row">
-<label>D1 Key</label>
-<input id="d1-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmd2J6Y3J2ZXNiZXltdmxzeHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTMzNTgsImV4cCI6MjA4ODkyOTM1OH0.E4Zvq43f0M29hAZzKg78W9HRpthv0I9U37LDo_0Pyvo">
-</div>
-<div style="display:flex;gap:10px;margin-top:12px">
-<button class="btn btn-purple" onclick="checkBoth()">🔍 ตรวจสอบข้อมูลทั้ง 2 ฝั่ง</button>
-</div>
+<h3>⚙️ การเชื่อมต่อ</h3>
+<div class="field"><label>Supabase URL</label><input id="sb-url" value="https://sfwbzcrvesbeymvlsxsu.supabase.co"></div>
+<div class="field"><label>Supabase Anon Key</label><input id="sb-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmd2J6Y3J2ZXNiZXltdmxzeHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTMzNTgsImV4cCI6MjA4ODkyOTM1OH0.E4Zvq43f0M29hAZzKg78W9HRpthv0I9U37LDo_0Pyvo"></div>
+<div class="field"><label>D1 Worker URL</label><input id="cf-url" value="https://crm-themt-api.themtja.workers.dev"></div>
+<div class="field"><label>D1 Key (same key)</label><input id="cf-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmd2J6Y3J2ZXNiZXltdmxzeHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTMzNTgsImV4cCI6MjA4ODkyOTM1OH0.E4Zvq43f0M29hAZzKg78W9HRpthv0I9U37LDo_0Pyvo"></div>
 </div>
 
-<div class="card" id="compare-card" style="display:none">
-<h2>📊 เปรียบเทียบข้อมูล</h2>
-<div id="compare-body"></div>
+<div class="btns">
+<button class="btn btn-blue" onclick="checkAll()">🔍 ตรวจสอบข้อมูล</button>
+<button class="btn btn-purple" onclick="syncFlashStatus()">🚚 ซิงค์สถานะ Flash</button>
+<button class="btn btn-amber" onclick="syncMissingOrders()">📦 ซิงค์ Orders ที่หาย</button>
+<button class="btn btn-green" onclick="syncEverything()">🔄 ซิงค์ทั้งหมด</button>
 </div>
 
-<div class="card" id="log-card" style="display:none">
-<h2>📋 Log</h2>
-<div class="progress"><div class="progress-bar" id="prog"></div></div>
-<div class="log" id="log"></div>
-</div>
+<div class="progress" id="pb-wrap" style="display:none"><div class="progress-bar" id="pb"></div></div>
+<div class="log" id="log" style="display:none"></div>
 </div>
 
 <script>
-var TABLES=["orders","parcel_checks","accounts","app_settings"];
-var TABLE_BK={"orders":"order_id","parcel_checks":"tracking_no","accounts":"username","app_settings":"key"};
-
-function headers(key){return{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"}}
+var $=function(id){return document.getElementById(id)};
+function log(m,c){$('log').style.display='block';$('log').innerHTML+='<div class="'+(c||'')+'">'+ new Date().toLocaleTimeString()+' '+m+'</div>';$('log').scrollTop=1e6;}
+function pb(p){$('pb-wrap').style.display='block';$('pb').style.width=Math.min(100,p)+'%';}
+function cfg(){return{sbUrl:$('sb-url').value.trim().replace(/\/$/,''),sbKey:$('sb-key').value.trim(),cfUrl:$('cf-url').value.trim().replace(/\/$/,''),cfKey:$('cf-key').value.trim()};}
+function hdr(key){return{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};}
 
 async function fetchAll(baseUrl,key,table){
-  var all=[],page=0,size=1000;
+  var all=[],page=0,sz=1000;
   while(true){
-    var from=page*size,to=from+size-1;
-    try{
-      var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=*",{
-        headers:Object.assign({},headers(key),{Range:from+"-"+to})
-      });
-      if(!r.ok){log("\u274c "+table+": HTTP "+r.status,"err");return all;}
-      var data=await r.json();
-      if(!data||data.length===0)break;
-      all=all.concat(data);
-      if(data.length<size)break;
-      page++;if(page>50)break;
-    }catch(e){log("\u274c "+table+": "+e.message,"err");return all;}
+    var r=await fetch(baseUrl+'/rest/v1/'+table+'?select=*',{headers:Object.assign({},hdr(key),{Range:page*sz+'-'+(page*sz+sz-1)})});
+    if(!r.ok){log('❌ '+table+': HTTP '+r.status,'err');return all;}
+    var d=await r.json();if(!d||!d.length)break;
+    all=all.concat(d);if(d.length<sz)break;page++;
   }
   return all;
 }
 
-function log(msg,cls){
-  var el=document.getElementById("log");
-  document.getElementById("log-card").style.display="block";
-  el.innerHTML+='<span class="'+(cls||"")+'">'+new Date().toLocaleTimeString()+" "+msg+"</span>\n";
-  el.scrollTop=el.scrollHeight;
-}
-function setProgress(pct){document.getElementById("prog").style.width=pct+"%";}
+// ============ ตรวจสอบ ============
+async function checkAll(){
+  var c=cfg();$('log').innerHTML='';
+  log('🔍 กำลังตรวจสอบ...','info');pb(5);
 
-async function checkBoth(){
-  var sbUrl=document.getElementById("sb-url").value.trim();
-  var sbKey=document.getElementById("sb-key").value.trim();
-  var d1Url=document.getElementById("d1-url").value.trim();
-  var d1Key=document.getElementById("d1-key").value.trim();
-  document.getElementById("log").innerHTML="";
-  log("\ud83d\udd0d \u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a...","info");
+  var tables=['orders','parcel_checks','accounts'];
+  var bkeys={orders:'order_id',parcel_checks:'tracking_no',accounts:'username'};
 
-  var html="";
-  for(var i=0;i<TABLES.length;i++){
-    var t=TABLES[i];
-    var bk=TABLE_BK[t]||"id";
-    log("\ud83d\udcca \u0e15\u0e23\u0e27\u0e08 "+t+" (key: "+bk+")...","info");
-
-    var sbData=await fetchAll(sbUrl,sbKey,t);
-    var d1Data=await fetchAll(d1Url,d1Key,t);
-
-    // Compare by business key
-    var d1Keys={};
-    d1Data.forEach(function(r){var k=r[bk];if(k)d1Keys[String(k)]=true;});
-    var missing=sbData.filter(function(r){var k=r[bk];return k&&!d1Keys[String(k)];});
-
-    log("  Supabase: "+sbData.length+" | D1: "+d1Data.length+" | \u0e02\u0e32\u0e14: "+missing.length+(missing.length>0?" \u26a0\ufe0f":""),"ok");
-
-    html+='<div class="sync-row">';
-    html+='<div class="name">'+t+' <span style="font-size:11px;color:#94a3b8">(key: '+bk+")</span></div>";
-    html+='<div class="counts">';
-    html+='<span class="badge badge-sb">SB: '+sbData.length+"</span> ";
-    html+='<span class="badge badge-d1">D1: '+d1Data.length+"</span> ";
-    if(missing.length>0){
-      html+='<span style="color:#dc2626;font-weight:700;font-size:12px">\u0e02\u0e32\u0e14 '+missing.length+" \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span>";
-    }else{
-      html+='<span style="color:#059669;font-weight:700;font-size:12px">\u2705 \u0e04\u0e23\u0e1a</span>';
-    }
-    html+="</div>";
-    if(missing.length>0){
-      html+='<button class="btn btn-blue" onclick="syncTable(\'"+t+"\'\')">\u0e0b\u0e34\u0e07\u0e04\u0e4c '+missing.length+" \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</button>";
-    }
-    html+="</div>";
+  for(var i=0;i<tables.length;i++){
+    var t=tables[i],bk=bkeys[t];
+    log('📊 '+t+' (key: '+bk+')...','info');
+    var sb=await fetchAll(c.sbUrl,c.sbKey,t);
+    var d1=await fetchAll(c.cfUrl,c.cfKey,t);
+    var d1k={};d1.forEach(function(r){if(r[bk])d1k[String(r[bk])]=1;});
+    var miss=sb.filter(function(r){return r[bk]&&!d1k[String(r[bk])];});
+    log('  SB: '+sb.length+' | D1: '+d1.length+' | ขาด: '+miss.length+(miss.length>0?' ⚠️':' ✅'),'ok');
+    pb(5+(i+1)/tables.length*30);
   }
-  html+='<div style="margin-top:12px"><button class="btn btn-green" onclick="syncAll()">\ud83d\udd04 \u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</button></div>';
-  document.getElementById("compare-card").style.display="block";
-  document.getElementById("compare-body").innerHTML=html;
-  log("\u2705 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08","ok");
+  log('✅ ตรวจสอบเสร็จ','ok');pb(100);
 }
 
-async function syncTable(table){
-  var sbUrl=document.getElementById("sb-url").value.trim();
-  var sbKey=document.getElementById("sb-key").value.trim();
-  var d1Url=document.getElementById("d1-url").value.trim();
-  var d1Key=document.getElementById("d1-key").value.trim();
-  var bk=TABLE_BK[table]||"id";
+// ============ ซิงค์สถานะ Flash (ใช้ /api/batch-update) ============
+async function syncFlashStatus(){
+  var c=cfg();log('🚚 เริ่มซิงค์สถานะ Flash...','info');pb(5);
 
-  log("\ud83d\udd04 \u0e0b\u0e34\u0e07\u0e04\u0e4c "+table+"...","info");
-  setProgress(10);
+  // Test worker health
+  try{
+    var h=await fetch(c.cfUrl+'/api/health').then(function(r){return r.json();});
+    if(!h.ok)throw new Error('Worker ไม่ตอบ');
+    log('✅ Worker OK','ok');
+  }catch(e){log('❌ Worker error: '+e.message,'err');return;}
 
-  var sbData=await fetchAll(sbUrl,sbKey,table);
-  log("  Supabase: "+sbData.length,"info");
-  setProgress(30);
+  // Sync orders flash status
+  log('📥 ดึง orders จาก Supabase...','info');
+  var sbOrders=await fetchAll(c.sbUrl,c.sbKey,'orders');
+  var withTrack=sbOrders.filter(function(r){return r.tracking_no&&r.tracking_no.length>3;});
+  log('📦 orders ที่มี tracking: '+withTrack.length,'info');
 
-  var d1Data=await fetchAll(d1Url,d1Key,table);
-  var d1Keys={};
-  d1Data.forEach(function(r){var k=r[bk];if(k)d1Keys[String(k)]=true;});
-  log("  D1: "+d1Data.length,"info");
-  setProgress(50);
-
-  var missing=sbData.filter(function(r){var k=r[bk];return k&&!d1Keys[String(k)];});
-  log("  \u0e02\u0e32\u0e14: "+missing.length+" \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23","warn");
-
-  if(missing.length===0){
-    log("  \u2705 \u0e04\u0e23\u0e1a\u0e41\u0e25\u0e49\u0e27","ok");
-    setProgress(100);return;
+  var updated=0,batch=100;
+  for(var i=0;i<withTrack.length;i+=batch){
+    var chunk=withTrack.slice(i,i+batch);
+    try{
+      var r=await fetch(c.cfUrl+'/api/batch-update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'orders',rows:chunk})});
+      if(r.ok){var res=await r.json();updated+=res.updated||0;}
+      else{log('⚠️ batch orders '+r.status,'warn');}
+    }catch(e){log('❌ '+e.message,'err');}
+    var done=Math.min(i+batch,withTrack.length);
+    if(done%500===0||done===withTrack.length)log('  ✅ orders '+done+'/'+withTrack.length+' (อัพเดต '+updated+')','ok');
+    pb(10+(done/withTrack.length)*35);
   }
 
-  // Insert 1 at a time — remove id field to avoid conflicts
+  // Sync parcel_checks
+  log('📥 ดึง parcel_checks จาก Supabase...','info');
+  var sbParcels=await fetchAll(c.sbUrl,c.sbKey,'parcel_checks');
+  var parcelsTrack=sbParcels.filter(function(r){return r.tracking_no&&r.tracking_no.length>3;});
+  log('📦 parcels ที่มี tracking: '+parcelsTrack.length,'info');
+
+  var pUpdated=0;
+  for(var i=0;i<parcelsTrack.length;i+=batch){
+    var chunk=parcelsTrack.slice(i,i+batch);
+    try{
+      var r=await fetch(c.cfUrl+'/api/batch-update-parcels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:chunk})});
+      if(r.ok){var res=await r.json();pUpdated+=res.updated||0;}
+      else{log('⚠️ batch parcels '+r.status,'warn');}
+    }catch(e){log('❌ '+e.message,'err');}
+    var done=Math.min(i+batch,parcelsTrack.length);
+    if(done%500===0||done===parcelsTrack.length)log('  ✅ parcels '+done+'/'+parcelsTrack.length+' (อัพเดต '+pUpdated+')','ok');
+    pb(50+(done/parcelsTrack.length)*35);
+  }
+
+  pb(100);log('','');
+  log('🎉 ซิงค์สถานะ Flash เสร็จ! orders '+updated+' + parcels '+pUpdated,'ok');
+}
+
+// ============ ซิงค์ Orders ที่หาย (เพิ่มใหม่) ============
+async function syncMissingOrders(){
+  var c=cfg();log('📦 หา orders ที่หายไป...','info');pb(5);
+
+  var sb=await fetchAll(c.sbUrl,c.sbKey,'orders');
+  log('  Supabase: '+sb.length,'info');pb(25);
+  var d1=await fetchAll(c.cfUrl,c.cfKey,'orders');
+  log('  D1: '+d1.length,'info');pb(45);
+
+  var d1k={};d1.forEach(function(r){if(r.order_id)d1k[r.order_id]=1;});
+  var missing=sb.filter(function(r){return r.order_id&&!d1k[r.order_id];});
+  log('  ขาด: '+missing.length+' รายการ','warn');
+
+  if(!missing.length){log('✅ ครบแล้ว!','ok');pb(100);return;}
+
   var done=0,fail=0;
   for(var i=0;i<missing.length;i++){
     var rec=Object.assign({},missing[i]);
-    delete rec.id; // let D1 auto-generate
+    delete rec.id;
     try{
-      var r=await fetch(d1Url+"/rest/v1/"+table,{
-        method:"POST",
-        headers:Object.assign({},headers(d1Key),{Prefer:"return=minimal"}),
-        body:JSON.stringify(rec)
-      });
+      var r=await fetch(c.cfUrl+'/rest/v1/orders',{method:'POST',headers:Object.assign({},hdr(c.cfKey),{Prefer:'return=minimal'}),body:JSON.stringify(rec)});
       if(r.ok){done++;}
       else{
         fail++;
-        if(fail<=3){var txt=await r.text();log("  \u274c #"+(i+1)+": "+r.status+" "+txt.substring(0,100),"err");}
+        if(fail<=5){var t=await r.text();log('  ❌ '+rec.order_id+': '+r.status+' '+t.substring(0,120),'err');}
       }
-    }catch(e){fail++;if(fail<=3)log("  \u274c "+e.message,"err");}
-    if(i%10===0)setProgress(50+Math.round((i/missing.length)*50));
+    }catch(e){fail++;if(fail<=5)log('  ❌ '+e.message,'err');}
+    if((i+1)%20===0||i===missing.length-1){
+      pb(50+((i+1)/missing.length)*50);
+      log('  📊 '+( i+1)+'/'+missing.length+' (สำเร็จ '+done+' ล้มเหลว '+fail+')','info');
+    }
   }
-  log("  \u2705 "+table+": \u0e40\u0e1e\u0e34\u0e48\u0e21 "+done+" \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08"+(fail>0?", \u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27 "+fail:""),"ok");
-  setProgress(100);
+  pb(100);log('✅ เพิ่ม orders: '+done+' สำเร็จ'+(fail>0?', ล้มเหลว '+fail:''),'ok');
 }
 
-async function syncAll(){
-  for(var i=0;i<TABLES.length;i++)await syncTable(TABLES[i]);
-  log("\ud83c\udf89 \u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e40\u0e2a\u0e23\u0e47\u0e08!","ok");
-  setTimeout(checkBoth,1000);
+// ============ ซิงค์ทั้งหมด ============
+async function syncEverything(){
+  $('log').innerHTML='';
+  log('🔄 เริ่มซิงค์ทั้งหมด...','info');
+  await syncMissingOrders();
+  await syncFlashStatus();
+  log('','');log('🎉 เสร็จทุกอย่าง!','ok');
 }
 </script>
 </body>
