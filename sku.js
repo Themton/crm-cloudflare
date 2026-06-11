@@ -77,22 +77,37 @@ async function saveCat(){
 function getCats(){ var c=["ทั้งหมด"]; CAT.forEach(function(p){if(c.indexOf(p.cat)<0)c.push(p.cat);}); return c; }
 
 // ── React field helpers ──
-function setReactInput(input,val){
+// ── React field helpers (robust — ใช้ได้กับ React 18 production) ──
+function triggerReactChange(el,val){
   try{
-    var s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
-    s.call(input,val);
-    input.dispatchEvent(new Event("input",{bubbles:true}));
-    input.dispatchEvent(new Event("change",{bubbles:true}));
+    // Method 1: React internal props — เรียก onChange ตรง
+    var propsKey=Object.keys(el).find(function(k){return k.startsWith("__reactProps");});
+    if(propsKey && el[propsKey] && el[propsKey].onChange){
+      el[propsKey].onChange({target:{value:val}});
+      return;
+    }
+    // Method 2: React fiber event handlers
+    var fiberKey=Object.keys(el).find(function(k){return k.startsWith("__reactFiber")||k.startsWith("__reactInternalInstance");});
+    if(fiberKey){
+      var fiber=el[fiberKey];
+      while(fiber){
+        if(fiber.memoizedProps && fiber.memoizedProps.onChange){
+          fiber.memoizedProps.onChange({target:{value:val}});
+          return;
+        }
+        fiber=fiber.return;
+      }
+    }
+    // Method 3: Native setter + events (fallback)
+    var proto=el.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
+    var setter=Object.getOwnPropertyDescriptor(proto,"value").set;
+    setter.call(el,val);
+    el.dispatchEvent(new Event("input",{bubbles:true}));
+    el.dispatchEvent(new Event("change",{bubbles:true}));
   }catch(e){}
 }
-function setReactTextarea(ta,val){
-  try{
-    var s=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,"value").set;
-    s.call(ta,val);
-    ta.dispatchEvent(new Event("input",{bubbles:true}));
-    ta.dispatchEvent(new Event("change",{bubbles:true}));
-  }catch(e){}
-}
+function setReactInput(input,val){ triggerReactChange(input,val); }
+function setReactTextarea(ta,val){ triggerReactChange(ta,val); }
 
 // Click an original product code button to toggle React state
 function clickOrigBtn(sku){
@@ -126,14 +141,20 @@ function syncFormFromCart(){
     }
   });
 
-  // Find Remark textarea — ใช้เป็นช่องแจ้งสินค้า (auto-fill เสมอ)
-  var allTA=document.querySelectorAll("textarea");
-  allTA.forEach(function(ta){
-    if((ta.placeholder||"").indexOf("สินค้า")>=0 || (ta.placeholder||"").indexOf("จำนวน")>=0){
-      var txt=items.length>0 ? items.join(", ") : "";
-      setReactTextarea(ta,txt);
+  // Find Remark field — ใช้เป็นช่องแจ้งสินค้า (auto-fill เสมอ)
+  // ค้นหาทั้ง textarea และ input
+  var remarkField=null;
+  document.querySelectorAll("textarea,input").forEach(function(el){
+    if(remarkField) return;
+    var ph=(el.placeholder||"").toLowerCase();
+    if(ph.indexOf("สินค้า")>=0 || ph.indexOf("จำนวน")>=0){
+      remarkField=el;
     }
   });
+  if(remarkField){
+    var txt=items.length>0 ? items.join(", ") : "";
+    triggerReactChange(remarkField,txt);
+  }
 
   // Make sure at least one original button is selected for validation
   syncOrigButtons();
