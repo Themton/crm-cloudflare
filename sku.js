@@ -634,7 +634,7 @@ function enhanceParcelStats(){
         var total=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
         _lastParcelTotal=total;
 
-        // Force update with interval
+        // Force update with interval + add debug label
         if(_forceInterval)clearInterval(_forceInterval);
         var att=0;
         _forceInterval=setInterval(function(){
@@ -645,6 +645,14 @@ function enhanceParcelStats(){
           if(card){
             var v=card.querySelector("div:nth-child(2)");
             if(v){v.textContent="\u0e3f"+total.toLocaleString();v.style.color="#8b5cf6";}
+            // Debug label
+            if(!card.querySelector(".sku-debug")){
+              var dbg=document.createElement("div");
+              dbg.className="sku-debug";
+              dbg.style.cssText="font-size:10px;color:#94a3b8;margin-top:2px";
+              dbg.textContent="(orders "+ym+": "+filtered.length+" rows)";
+              card.appendChild(dbg);
+            }
           }
           att++;if(att>20)clearInterval(_forceInterval);
         },500);
