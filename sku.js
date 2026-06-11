@@ -126,17 +126,12 @@ function syncFormFromCart(){
     }
   });
 
-  // Find Remark textarea — placeholder "สินค้า จำนวน"
+  // Find Remark textarea — ใช้เป็นช่องแจ้งสินค้า (auto-fill เสมอ)
   var allTA=document.querySelectorAll("textarea");
   allTA.forEach(function(ta){
     if((ta.placeholder||"").indexOf("สินค้า")>=0 || (ta.placeholder||"").indexOf("จำนวน")>=0){
-      // Only set if remark is empty or was auto-set before
-      var cur=ta.value||"";
-      var wasAuto=cur.indexOf("[SKU:")===0||cur==="";
-      if(wasAuto||!cur){
-        var txt=items.length>0?"[SKU: "+items.join(", ")+"]":"";
-        setReactTextarea(ta,txt);
-      }
+      var txt=items.length>0 ? items.join(", ") : "";
+      setReactTextarea(ta,txt);
     }
   });
 
