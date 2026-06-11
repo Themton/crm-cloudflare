@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sync Supabase → D1</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f7;min-height:100vh;padding:24px}
+.wrap{max-width:800px;margin:0 auto}
+h1{font-size:22px;font-weight:800;color:#1e293b;margin-bottom:8px}
+.sub{font-size:13px;color:#94a3b8;margin-bottom:24px}
+.card{background:#fff;border-radius:12px;border:1.5px solid #e2e8f0;padding:20px;margin-bottom:16px}
+.card h2{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.row{display:flex;gap:12px;margin-bottom:12px;align-items:center}
+.row label{font-size:12px;color:#64748b;min-width:80px}
+.row input{flex:1;padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;font-family:monospace}
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-purple{background:#8b5cf6;color:#fff}.btn-purple:hover{background:#7c3aed}
+.btn-blue{background:#2563eb;color:#fff}.btn-blue:hover{background:#1d4ed8}
+.btn-green{background:#059669;color:#fff}.btn-green:hover{background:#047857}
+.btn-gray{background:#e5e7eb;color:#475569}.btn-gray:hover{background:#d1d5db}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.tables{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.tbl{padding:12px;border-radius:8px;border:1px solid #e2e8f0}
+.tbl h3{font-size:13px;font-weight:600;margin-bottom:8px;color:#1e293b}
+.tbl .cnt{font-size:24px;font-weight:700}
+.tbl .cnt.sb{color:#3ECF8E}
+.tbl .cnt.d1{color:#f6821f}
+.tbl .lbl{font-size:11px;color:#94a3b8;margin-top:2px}
+.log{background:#1e293b;border-radius:8px;padding:16px;color:#e2e8f0;font-size:12px;font-family:monospace;max-height:400px;overflow-y:auto;margin-top:12px;white-space:pre-wrap;line-height:1.6}
+.log .ok{color:#4ade80}.log .err{color:#f87171}.log .info{color:#60a5fa}.log .warn{color:#fbbf24}
+.progress{height:6px;background:#e2e8f0;border-radius:3px;margin:12px 0;overflow:hidden}
+.progress-bar{height:100%;background:#8b5cf6;border-radius:3px;transition:width .3s;width:0}
+.sync-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px}
+.sync-row .name{font-size:14px;font-weight:600;flex:1}
+.sync-row .counts{font-size:12px;color:#64748b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-sb{background:#d1fae5;color:#065f46}
+.badge-d1{background:#fff7ed;color:#9a3412}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🔄 Sync Supabase → Cloudflare D1</h1>
+<p class="sub">ดึงข้อมูลจาก Supabase เดิม มาเพิ่มใน Cloudflare D1</p>
+
+<div class="card">
+<h2>⚙️ การเชื่อมต่อ</h2>
+<div class="row">
+<label>Supabase URL</label>
+<input id="sb-url" value="https://sfwbzcrvesbeymvlsxsu.supabase.co">
+</div>
+<div class="row">
+<label>Supabase Key</label>
+<input id="sb-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmd2J6Y3J2ZXNiZXltdmxzeHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTMzNTgsImV4cCI6MjA4ODkyOTM1OH0.E4Zvq43f0M29hAZzKg78W9HRpthv0I9U37LDo_0Pyvo">
+</div>
+<div class="row">
+<label>D1 Worker</label>
+<input id="d1-url" value="https://crm-themt-api.themtja.workers.dev">
+</div>
+<div class="row">
+<label>D1 Key</label>
+<input id="d1-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmd2J6Y3J2ZXNiZXltdmxzeHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTMzNTgsImV4cCI6MjA4ODkyOTM1OH0.E4Zvq43f0M29hAZzKg78W9HRpthv0I9U37LDo_0Pyvo">
+</div>
+<div style="display:flex;gap:10px;margin-top:12px">
+<button class="btn btn-purple" onclick="checkBoth()">🔍 ตรวจสอบข้อมูลทั้ง 2 ฝั่ง</button>
+</div>
+</div>
+
+<div class="card" id="compare-card" style="display:none">
+<h2>📊 เปรียบเทียบข้อมูล</h2>
+<div id="compare-body"></div>
+</div>
+
+<div class="card" id="log-card" style="display:none">
+<h2>📋 Log</h2>
+<div class="progress"><div class="progress-bar" id="prog"></div></div>
+<div class="log" id="log"></div>
+</div>
+</div>
+
+<script>
+var TABLES=["orders","parcel_checks","accounts","app_settings"];
+
+function headers(key){return{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"}}
+
+async function fetchAll(baseUrl,key,table){
+  var all=[],page=0,size=1000;
+  while(true){
+    var from=page*size,to=from+size-1;
+    var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=*&order=id.asc",{
+      headers:Object.assign({},headers(key),{Range:from+"-"+to})
+    });
+    if(!r.ok){log("❌ "+table+": HTTP "+r.status,"err");return all;}
+    var data=await r.json();
+    if(!data||data.length===0)break;
+    all=all.concat(data);
+    if(data.length<size)break;
+    page++;
+    if(page>50)break;
+  }
+  return all;
+}
+
+async function countTable(baseUrl,key,table){
+  try{
+    var r=await fetch(baseUrl+"/rest/v1/"+table+"?select=id&limit=1",{
+      headers:Object.assign({},headers(key),{Range:"0-0",Prefer:"count=exact"})
+    });
+    if(!r.ok)return"err";
+    var ct=r.headers.get("content-range");
+    if(ct){var m=ct.match(/\/(\d+)/);if(m)return parseInt(m[1]);}
+    var data=await r.json();
+    // Fallback: fetch all IDs
+    var r2=await fetch(baseUrl+"/rest/v1/"+table+"?select=id",{headers:headers(key)});
+    if(!r2.ok)return"err";
+    var d2=await r2.json();
+    return d2.length;
+  }catch(e){return"err";}
+}
+
+function log(msg,cls){
+  var el=document.getElementById("log");
+  document.getElementById("log-card").style.display="block";
+  el.innerHTML+='<span class="'+(cls||"")+'">'+(new Date).toLocaleTimeString()+" "+msg+"</span>\n";
+  el.scrollTop=el.scrollHeight;
+}
+
+function setProgress(pct){
+  document.getElementById("prog").style.width=pct+"%";
+}
+
+async function checkBoth(){
+  var sbUrl=document.getElementById("sb-url").value.trim();
+  var sbKey=document.getElementById("sb-key").value.trim();
+  var d1Url=document.getElementById("d1-url").value.trim();
+  var d1Key=document.getElementById("d1-key").value.trim();
+
+  document.getElementById("log").innerHTML="";
+  log("🔍 กำลังตรวจสอบ...","info");
+
+  var html="";
+  for(var i=0;i<TABLES.length;i++){
+    var t=TABLES[i];
+    log("📊 ตรวจ "+t+"...","info");
+
+    var sbData=await fetchAll(sbUrl,sbKey,t);
+    var d1Data=await fetchAll(d1Url,d1Key,t);
+
+    var sbCount=sbData.length;
+    var d1Count=d1Data.length;
+    var diff=sbCount-d1Count;
+
+    log("  Supabase: "+sbCount+" | D1: "+d1Count+" | ต่าง: "+diff+(diff>0?" ⚠️":""),"ok");
+
+    html+='<div class="sync-row">';
+    html+='<div class="name">'+t+'</div>';
+    html+='<div class="counts">';
+    html+='<span class="badge badge-sb">Supabase: '+sbCount+'</span> ';
+    html+='<span class="badge badge-d1">D1: '+d1Count+'</span> ';
+    if(diff>0){
+      html+='<span style="color:#dc2626;font-weight:700;font-size:12px">ขาด '+diff+' รายการ</span>';
+    }else if(diff===0){
+      html+='<span style="color:#059669;font-weight:700;font-size:12px">✅ ครบ</span>';
+    }else{
+      html+='<span style="color:#3b82f6;font-weight:700;font-size:12px">D1 มีมากกว่า '+(d1Count-sbCount)+'</span>';
+    }
+    html+='</div>';
+    if(diff>0){
+      html+='<button class="btn btn-blue" onclick="syncTable(\''+t+'\')">ซิงค์ '+diff+' รายการ</button>';
+    }
+    html+='</div>';
+  }
+  html+='<div style="margin-top:12px;display:flex;gap:10px">';
+  html+='<button class="btn btn-green" onclick="syncAll()">🔄 ซิงค์ทั้งหมด</button>';
+  html+='</div>';
+
+  document.getElementById("compare-card").style.display="block";
+  document.getElementById("compare-body").innerHTML=html;
+  log("✅ ตรวจสอบเสร็จ","ok");
+}
+
+async function syncTable(table){
+  var sbUrl=document.getElementById("sb-url").value.trim();
+  var sbKey=document.getElementById("sb-key").value.trim();
+  var d1Url=document.getElementById("d1-url").value.trim();
+  var d1Key=document.getElementById("d1-key").value.trim();
+
+  log("🔄 ซิงค์ "+table+"...","info");
+  setProgress(10);
+
+  // Fetch all from Supabase
+  var sbData=await fetchAll(sbUrl,sbKey,table);
+  log("  Supabase: "+sbData.length+" รายการ","info");
+  setProgress(30);
+
+  // Fetch existing IDs from D1
+  var d1Data=await fetchAll(d1Url,d1Key,table);
+  var d1Ids={};
+  d1Data.forEach(function(r){if(r.id)d1Ids[r.id]=true;});
+  log("  D1: "+d1Data.length+" รายการ","info");
+  setProgress(50);
+
+  // Find new records
+  var newRecords=sbData.filter(function(r){return r.id&&!d1Ids[r.id];});
+  log("  ใหม่: "+newRecords.length+" รายการ","warn");
+
+  if(newRecords.length===0){
+    log("  ✅ "+table+" ครบแล้ว ไม่มีอะไรต้องซิงค์","ok");
+    setProgress(100);
+    return;
+  }
+
+  // Insert in batches of 50
+  var batch=50,done=0,fail=0;
+  for(var i=0;i<newRecords.length;i+=batch){
+    var chunk=newRecords.slice(i,i+batch);
+    try{
+      var r=await fetch(d1Url+"/rest/v1/"+table,{
+        method:"POST",
+        headers:Object.assign({},headers(d1Key),{Prefer:"return=minimal","x-upsert":"true"}),
+        body:JSON.stringify(chunk)
+      });
+      if(r.ok){
+        done+=chunk.length;
+      }else{
+        fail+=chunk.length;
+        log("  ❌ Batch error: HTTP "+r.status,"err");
+      }
+    }catch(e){
+      fail+=chunk.length;
+      log("  ❌ "+e.message,"err");
+    }
+    setProgress(50+Math.round((i/newRecords.length)*50));
+  }
+
+  log("  ✅ "+table+": เพิ่ม "+done+" สำเร็จ"+(fail>0?", ล้มเหลว "+fail:""),"ok");
+  setProgress(100);
+}
+
+async function syncAll(){
+  for(var i=0;i<TABLES.length;i++){
+    await syncTable(TABLES[i]);
+  }
+  log("","");
+  log("🎉 ซิงค์ทั้งหมดเสร็จ!","ok");
+  // Re-check
+  setTimeout(checkBoth,1000);
+}
+</script>
+</body>
+</html>
