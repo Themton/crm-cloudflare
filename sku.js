@@ -464,6 +464,20 @@ function renderSkuPage(){
   h+='<div id="sp-missing-result"></div>';
   h+='</div>';
 
+  // Sync from Supabase section (admin only)
+  var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
+  if(_user&&_user.role==="admin"){
+    h+='<div style="margin-top:30px;padding:16px;background:#fff;border-radius:12px;border:1.5px solid #e2e8f0">';
+    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+    h+='<span style="font-size:18px">\uD83D\uDD04</span>';
+    h+='<span style="font-size:15px;font-weight:700;color:#1e293b">\u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 Supabase</span>';
+    h+='<button id="sp-sync-btn" style="margin-left:auto;padding:8px 16px;border-radius:8px;border:none;background:#8b5cf6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">\u0e14\u0e36\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 Supabase</button>';
+    h+='</div>';
+    h+='<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">\u0e14\u0e36\u0e07 orders + parcel_checks + accounts \u0e08\u0e32\u0e01 Supabase \u0e40\u0e14\u0e34\u0e21 \u0e21\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19 Cloudflare D1</div>';
+    h+='<div id="sp-sync-result"></div>';
+    h+='</div>';
+  }
+
   h+='</div>'; // close max-width wrapper
   page.innerHTML=h;
   // Bind check missing
@@ -814,6 +828,65 @@ function enhanceReturnRate(){
   }catch(e){}
 }
 
+// HR page — add ประจำ/รายวัน filter
+var _hrEmpTypes=null;
+function enhanceHRPage(){
+  try{
+    // Detect HR performance table
+    var table=null;
+    document.querySelectorAll("table").forEach(function(t){
+      var th=t.querySelector("th,td");
+      if(th&&(th.textContent||"").indexOf("\u0e0a\u0e37\u0e48\u0e2d\u0e40\u0e25\u0e48\u0e19")>=0)table=t;
+    });
+    if(!table)return;
+    // Find filter bar
+    var filterBar=null;
+    document.querySelectorAll("div").forEach(function(d){
+      if(d.querySelector("button")&&(d.textContent||"").indexOf("\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49")>=0&&(d.textContent||"").indexOf("7 \u0e27\u0e31\u0e19")>=0&&!d.querySelector("table"))filterBar=d;
+    });
+    if(!filterBar||filterBar.querySelector("#hr-type-filter"))return;
+
+    // Load emp_type (once)
+    if(!_hrEmpTypes){
+      _hrEmpTypes={};
+      (async function(){
+        try{
+          var r=await api("accounts?select=nickname,display_name,emp_type");
+          if(r)r.forEach(function(a){
+            var nick=(typeof extractNickname==="function")?extractNickname(a.display_name,a.nickname):(a.nickname||a.display_name||"");
+            if(nick)_hrEmpTypes[nick]=a.emp_type||"";
+          });
+        }catch(e){}
+      })();
+    }
+
+    // Insert filter buttons
+    var wrap=document.createElement("span");
+    wrap.id="hr-type-filter";
+    wrap.style.cssText="display:inline-flex;gap:6px;margin-left:16px;border-left:2px solid #e2e8f0;padding-left:16px";
+    [{k:"all",l:"\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14",c:"#92400e"},{k:"\u0e1b\u0e23\u0e30\u0e08\u0e33",l:"\u0e1b\u0e23\u0e30\u0e08\u0e33",c:"#15803d"},{k:"\u0e23\u0e32\u0e22\u0e27\u0e31\u0e19",l:"\u0e23\u0e32\u0e22\u0e27\u0e31\u0e19",c:"#0369a1"}].forEach(function(t,idx){
+      var b=document.createElement("button");
+      b.textContent=t.l;
+      var active=idx===0;
+      b.style.cssText="padding:6px 14px;border-radius:8px;border:"+(active?"2px solid #d97706":"1px solid #e2e8f0")+";background:"+(active?"#fef3c7":"#fff")+";color:"+(active?t.c:"#64748b")+";font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+      b.onclick=function(){
+        wrap.querySelectorAll("button").forEach(function(bb){bb.style.border="1px solid #e2e8f0";bb.style.background="#fff";bb.style.color="#64748b";});
+        b.style.border="2px solid #d97706";b.style.background="#fef3c7";b.style.color=t.c;
+        // Filter rows
+        table.querySelectorAll("tr").forEach(function(tr,i){
+          if(i===0)return;
+          if(t.k==="all"){tr.style.display="";return;}
+          var nameCell=tr.querySelector("td");
+          var name=nameCell?(nameCell.textContent||"").trim():"";
+          tr.style.display=(_hrEmpTypes[name]===t.k)?"":"none";
+        });
+      };
+      wrap.appendChild(b);
+    });
+    filterBar.appendChild(wrap);
+  }catch(e){}
+}
+
 function tidyCodesBar(){
   try{
     var inp=document.getElementById("_newPC");
@@ -844,7 +917,7 @@ function startWatch(){
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
-      tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();enhanceReturnRate();}catch(e){}
+      tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();enhanceReturnRate();enhanceHRPage();}catch(e){}
   },400);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
