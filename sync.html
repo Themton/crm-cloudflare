@@ -166,7 +166,7 @@ async function syncMissingOrders(){
   for(var i=0;i<missing.length;i++){
     var rec={};COLS.forEach(function(c2){if(missing[i][c2]!==undefined)rec[c2]=missing[i][c2];});
     try{
-      var r=await fetch(c.cfUrl+'/rest/v1/orders',{method:'POST',headers:Object.assign({},hdr(c.cfKey),{Prefer:'return=minimal'}),body:JSON.stringify(rec)});
+      var r=await fetch(c.cfUrl+'/rest/v1/orders',{method:'POST',headers:Object.assign({},hdr(c.cfKey),{Prefer:'return=representation','x-upsert':'true'}),body:JSON.stringify(rec)});
       if(r.ok){done++;}
       else{
         fail++;
