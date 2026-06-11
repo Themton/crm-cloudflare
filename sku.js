@@ -554,19 +554,25 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
-// Enhance parcel stats — fix COD to count ALL parcels + show returned amount
-var _parcelFixDone={};
+// Enhance parcel stats — replace COD card with orders-based calculation
+var _parcelEnhanced=false;
 function enhanceParcelStats(){
   try{
-    // Find ยอด COD card
-    var codCard=null,returnCard=null;
+    // Find ยอด COD card label
+    var codLabel=null;
     document.querySelectorAll("div").forEach(function(d){
-      var t=d.textContent.trim();
-      if(t==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)codCard=d.parentElement;
-      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
+      if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)codLabel=d;
     });
+    if(!codLabel)return;
+    var codCard=codLabel.parentElement;
+    if(!codCard||codCard.getAttribute("data-sku-fixed"))return;
+    codCard.setAttribute("data-sku-fixed","1");
 
-    // Add returned COD badge
+    // Also add returned COD badge
+    var returnCard=null;
+    document.querySelectorAll("div").forEach(function(d){
+      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
+    });
     if(returnCard&&!returnCard.querySelector(".sku-return-cod")){
       var codLoss=0;
       document.querySelectorAll("div,b").forEach(function(el){
@@ -582,92 +588,68 @@ function enhanceParcelStats(){
       }
     }
 
-    // Fix ยอด COD — ดึงจาก orders table filter by account_email (เหมือนหน้ารายงาน)
-    if(!codCard)return;
-    var sig=codCard.textContent;
-    if(_parcelFixDone[sig])return;
-    _parcelFixDone[sig]=true;
-
-    // Get current user
+    // Get user
     var _user=null;
     try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
     var isAdmin=_user&&_user.role==="admin";
     var myEmail=(_user&&_user.username)||"";
 
-    // Fetch from orders (same source as report page) filter by account_email
+    // Detect month from table rows
+    var ym="";
+    document.querySelectorAll("td").forEach(function(td){
+      if(ym)return;
+      var t=(td.textContent||"").trim();
+      var dm=t.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+      if(dm){
+        var yr=dm[3];
+        if(yr.length===2){var n=parseInt(yr);yr=n>40?String(n+1957):("20"+yr);}
+        else if(parseInt(yr)>2500){yr=String(parseInt(yr)-543);}
+        ym=yr+"-"+dm[2];
+      }
+    });
+    if(!ym){var now=new Date();ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");}
+
+    // Show loading
+    var valEl=codCard.querySelector("div:nth-child(2)");
+    if(valEl)valEl.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...";
+
+    // Fetch from orders table (same as report page)
     (async function(){
       try{
-        var all=[];var page=0;var size=1000;
+        var all=[];var pg=0;
         var qry="orders?select=sale_price,cod,timestamp&order=timestamp.desc";
         if(!isAdmin&&myEmail)qry+="&account_email=eq."+encodeURIComponent(myEmail);
         while(true){
-          var from=page*size;var to=from+size-1;
-          var r=await api(qry,{range:from+"-"+to});
+          var f=pg*1000;var t=f+999;
+          var r=await api(qry,{range:f+"-"+t});
           if(!r||r.length===0)break;
-          all=all.concat(r);
-          if(r.length<size)break;
-          page++;if(page>10)break;
+          all=all.concat(r);if(r.length<1000)break;pg++;
         }
-        // Detect selected month from visible table data (more reliable than UI controls)
-        var ym="";
-        // Method 1: read dates from table rows
-        document.querySelectorAll("td").forEach(function(td){
-          if(ym)return;
-          var t=(td.textContent||"").trim();
-          var dm=t.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
-          if(dm){
-            var yr=dm[3];
-            if(yr.length===2){
-              var n=parseInt(yr);
-              // Thai Buddhist era: 69 = 2569 BE = 2026 CE
-              yr=n>40?String(n+1957):("20"+yr);
-            }else if(parseInt(yr)>2500){
-              yr=String(parseInt(yr)-543); // 2569 → 2026
+        var filtered=all.filter(function(o){return(o.timestamp||"").substring(0,7)===ym;});
+        var total=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
+
+        // Force update card — use interval to beat React re-renders
+        var attempts=0;
+        var forceUpdate=setInterval(function(){
+          var card=null;
+          document.querySelectorAll("div").forEach(function(d){
+            if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)card=d.parentElement;
+          });
+          if(card){
+            var v=card.querySelector("div:nth-child(2)");
+            if(v){
+              var current=v.textContent.replace(/[^\d]/g,"");
+              if(current!==String(total)){
+                v.textContent="\u0e3f"+total.toLocaleString();
+                v.style.color="#8b5cf6";
+              }
             }
-            ym=yr+"-"+dm[2];
           }
-          var dm2=t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-          if(dm2)ym=dm2[1]+"-"+dm2[2];
-        });
-        // Method 2: read from date inputs
-        if(!ym){
-          document.querySelectorAll("input").forEach(function(inp){
-            if(ym)return;
-            var v=inp.value||"";
-            var dm=v.match(/(\d{4})-(\d{2})/);
-            if(dm)ym=dm[1]+"-"+dm[2];
-            var dm2=v.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-            if(dm2)ym=dm2[3]+"-"+dm2[2];
-          });
-        }
-        // Method 3: fallback to current month
-        if(!ym){var now=new Date();ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");}
-
-        // Filter orders by detected month (using timestamp)
-        var filtered=all.filter(function(o){
-          var ts=o.timestamp||"";
-          // timestamp could be ISO or date string
-          return ts.substring(0,7)===ym;
-        });
-        if(filtered.length===0){
-          // Try with date format DD/MM/YYYY
-          filtered=all.filter(function(o){
-            var ts=o.timestamp||"";
-            var m=ts.match(/(\d{4})-(\d{2})/);
-            return m&&(m[1]+"-"+m[2])===ym;
-          });
-        }
-
-        // Sum SalePrice (same as report page)
-        var totalCOD=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
-
-        // Update the card
-        if(totalCOD>0&&codCard){
-          var valEl=codCard.querySelector("div:nth-child(2)");
-          if(valEl&&valEl.textContent.indexOf("\u0e3f")>=0){
-            valEl.textContent="\u0e3f"+totalCOD.toLocaleString();
-          }
-        }
+          attempts++;
+          if(attempts>20)clearInterval(forceUpdate);
+        },500);
+        // Stop after 10 seconds
+        setTimeout(function(){clearInterval(forceUpdate);},10000);
       }catch(e){}
     })();
   }catch(e){}
