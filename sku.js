@@ -476,34 +476,94 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
-// Enhance parcel stats — add returned COD amount to stat card
+// Enhance parcel stats — fix COD to count ALL parcels + show returned amount
+var _parcelFixDone={};
 function enhanceParcelStats(){
   try{
-    // Find the "ส่งคืน/ตีกลับ" stat card
-    var cards=document.querySelectorAll("div");
-    var returnCard=null;
-    cards.forEach(function(d){
-      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a" && d.parentElement){
-        returnCard=d.parentElement;
+    // Find ยอด COD card
+    var codCard=null,returnCard=null;
+    document.querySelectorAll("div").forEach(function(d){
+      var t=d.textContent.trim();
+      if(t==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)codCard=d.parentElement;
+      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
+    });
+
+    // Add returned COD badge
+    if(returnCard&&!returnCard.querySelector(".sku-return-cod")){
+      var codLoss=0;
+      document.querySelectorAll("div,b").forEach(function(el){
+        var m=(el.textContent||"").match(/COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 [\u0e3f]?([\d,]+)/);
+        if(m)codLoss=parseInt(m[1].replace(/,/g,""))||0;
+      });
+      if(codLoss>0){
+        var badge=document.createElement("div");
+        badge.className="sku-return-cod";
+        badge.style.cssText="font-size:12px;color:#ef4444;font-weight:700;margin-top:4px";
+        badge.textContent="\u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f"+codLoss.toLocaleString();
+        returnCard.appendChild(badge);
       }
-    });
-    if(!returnCard || returnCard.querySelector(".sku-return-cod")) return;
-
-    // Extract COD amount from alert banner
-    var codAmount=0;
-    document.querySelectorAll("div,b").forEach(function(el){
-      var t=el.textContent||"";
-      var m=t.match(/COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 [\u0e3f\u20b9]?([\d,]+)/);
-      if(m) codAmount=parseInt(m[1].replace(/,/g,""))||0;
-    });
-
-    if(codAmount>0){
-      var badge=document.createElement("div");
-      badge.className="sku-return-cod";
-      badge.style.cssText="font-size:12px;color:#ef4444;font-weight:700;margin-top:4px";
-      badge.textContent="\u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f"+codAmount.toLocaleString();
-      returnCard.appendChild(badge);
     }
+
+    // Fix ยอด COD — recalculate from ALL parcels via API
+    if(!codCard)return;
+    var sig=codCard.textContent;
+    if(_parcelFixDone[sig])return;
+    _parcelFixDone[sig]=true;
+
+    // Fetch all parcels and sum COD
+    (async function(){
+      try{
+        var all=[];var page=0;var size=1000;
+        while(true){
+          var from=page*size;var to=from+size-1;
+          var r=await api("parcel_checks?select=cod,date,flash_status&order=created_at.desc",{range:from+"-"+to});
+          if(!r||r.length===0)break;
+          all=all.concat(r);
+          if(r.length<size)break;
+          page++;if(page>10)break;
+        }
+        // Get current month filter from UI
+        var monthMatch=document.querySelector("input[type='month'],input[value*='2026'],input[value*='2025']");
+        var filterMonth="";
+        document.querySelectorAll("button").forEach(function(b){
+          var t=b.textContent.trim();
+          if(t.indexOf("\u0e21\u0e01\u0e23\u0e32")>=0||t.indexOf("\u0e01\u0e38\u0e21\u0e20\u0e32")>=0||t.indexOf("\u0e21\u0e35\u0e19\u0e32")>=0||
+             t.indexOf("\u0e40\u0e21\u0e29\u0e32")>=0||t.indexOf("\u0e1e\u0e24\u0e29\u0e20\u0e32")>=0||t.indexOf("\u0e21\u0e34\u0e16\u0e38")>=0||
+             t.indexOf("\u0e01\u0e23\u0e01\u0e0e\u0e32")>=0||t.indexOf("\u0e2a\u0e34\u0e07\u0e2b\u0e32")>=0||t.indexOf("\u0e01\u0e31\u0e19\u0e22\u0e32")>=0||
+             t.indexOf("\u0e15\u0e38\u0e25\u0e32")>=0||t.indexOf("\u0e1e\u0e24\u0e28\u0e08\u0e34")>=0||t.indexOf("\u0e18\u0e31\u0e19\u0e27\u0e32")>=0){
+            // This button has a Thai month name — find the year nearby
+          }
+        });
+        // Use date from the displayed header (e.g., "(143 รายการ)")
+        // Simpler: get year-month from the first visible parcel date
+        var now=new Date();
+        var ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+        // Check if a specific month is selected in UI
+        document.querySelectorAll("input").forEach(function(inp){
+          if(inp.type==="month"&&inp.value)ym=inp.value;
+        });
+        // Also check displayed month text
+        document.querySelectorAll("div,span").forEach(function(el){
+          var m=(el.textContent||"").match(/(\d{4})-(\d{2})/);
+          if(m)ym=m[0];
+          var m2=(el.textContent||"").match(/\u0e40\u0e14\u0e37\u0e2d\u0e19.*?(\d{4})/);
+        });
+
+        // Filter parcels for the month
+        var filtered=all.filter(function(p){return(p.date||"").substring(0,7)===ym;});
+        if(filtered.length===0)filtered=all; // fallback: use all
+
+        var totalAllCOD=filtered.reduce(function(s,p){return s+(Number(p.cod)||0);},0);
+
+        // Update the card
+        if(totalAllCOD>0&&codCard){
+          var valEl=codCard.querySelector("div:nth-child(2)");
+          if(valEl&&valEl.textContent.indexOf("\u0e3f")>=0){
+            valEl.textContent="\u0e3f"+totalAllCOD.toLocaleString();
+          }
+        }
+      }catch(e){}
+    })();
   }catch(e){}
 }
 
