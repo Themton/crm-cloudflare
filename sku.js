@@ -835,28 +835,28 @@ function enhanceHRPage(){
     // HR access control — hide non-telesale sections on employee page
     var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
     if(_user&&_user.role==="hr"){
-      var hideKeys=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"];
-      // Inject CSS once
+      // ซ่อนด้วย CSS ที่ target สี background ของ section header
+      // ผู้ดูแลระบบ = rgb(254,243,199), HR = rgb(233,213,255), บัญชี = rgb(209,250,229), จัดส่ง = rgb(186,230,253)
       if(!document.getElementById("hr-hide-css")){
         var s=document.createElement("style");s.id="hr-hide-css";
-        s.textContent='[data-hr-hide]{display:none!important}';
+        s.textContent='';
         document.head.appendChild(s);
       }
-      // Find section headers by colored bg + "คน" text
+      // JS: ซ่อน section wrappers ทุก 400ms
+      var hideKeys=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07","HR"];
       document.querySelectorAll("div").forEach(function(d){
         var bg=window.getComputedStyle(d).backgroundColor;
-        if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg==="rgb(255, 255, 255)")return;
+        if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg==="rgb(255, 255, 255)"||bg==="rgb(240, 242, 247)")return;
         var txt=(d.textContent||"").trim();
-        if(txt.indexOf("\u0e04\u0e19")<0)return;
-        if(d.childElementCount>5)return;
-        // Check if this section should be hidden
+        if(txt.indexOf("\u0e04\u0e19")<0||d.childElementCount>5)return;
         var shouldHide=false;
         for(var i=0;i<hideKeys.length;i++){if(txt.indexOf(hideKeys[i])>=0){shouldHide=true;break;}}
-        if(/^.{0,4}HR\s/.test(txt))shouldHide=true;
         if(!shouldHide)return;
-        // Hide the parent wrapper (section container = header + rows)
+        // Hide wrapper = header's parent (contains header + employee rows)
         var wrapper=d.parentElement;
-        if(wrapper)wrapper.setAttribute("data-hr-hide","1");
+        if(wrapper){
+          wrapper.style.setProperty("display","none","important");
+        }
       });
     }
 
