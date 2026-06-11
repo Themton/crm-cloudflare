@@ -608,19 +608,48 @@ function enhanceParcelStats(){
           if(r.length<size)break;
           page++;if(page>10)break;
         }
-        // Detect current month from UI
-        var now=new Date();
-        var ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-        document.querySelectorAll("input").forEach(function(inp){
-          if(inp.type==="month"&&inp.value)ym=inp.value;
+        // Detect selected month from visible table data (more reliable than UI controls)
+        var ym="";
+        // Method 1: read dates from table rows
+        document.querySelectorAll("td").forEach(function(td){
+          if(ym)return;
+          var t=(td.textContent||"").trim();
+          var dm=t.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+          if(dm){
+            var yr=dm[3].length===2?"20"+dm[3]:dm[3];
+            ym=yr+"-"+dm[2];
+          }
+          var dm2=t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if(dm2)ym=dm2[1]+"-"+dm2[2];
         });
+        // Method 2: read from date inputs
+        if(!ym){
+          document.querySelectorAll("input").forEach(function(inp){
+            if(ym)return;
+            var v=inp.value||"";
+            var dm=v.match(/(\d{4})-(\d{2})/);
+            if(dm)ym=dm[1]+"-"+dm[2];
+            var dm2=v.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            if(dm2)ym=dm2[3]+"-"+dm2[2];
+          });
+        }
+        // Method 3: fallback to current month
+        if(!ym){var now=new Date();ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");}
 
-        // Filter by month
+        // Filter orders by detected month (using timestamp)
         var filtered=all.filter(function(o){
           var ts=o.timestamp||"";
+          // timestamp could be ISO or date string
           return ts.substring(0,7)===ym;
         });
-        if(filtered.length===0)filtered=all;
+        if(filtered.length===0){
+          // Try with date format DD/MM/YYYY
+          filtered=all.filter(function(o){
+            var ts=o.timestamp||"";
+            var m=ts.match(/(\d{4})-(\d{2})/);
+            return m&&(m[1]+"-"+m[2])===ym;
+          });
+        }
 
         // Sum SalePrice (same as report page)
         var totalCOD=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
