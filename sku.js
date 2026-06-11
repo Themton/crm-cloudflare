@@ -510,13 +510,24 @@ function enhanceParcelStats(){
     if(_parcelFixDone[sig])return;
     _parcelFixDone[sig]=true;
 
-    // Fetch all parcels and sum COD
+    // Get current user
+    var _user=null;
+    try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
+    var isAdmin=_user&&_user.role==="admin";
+    var myName="";
+    if(_user&&!isAdmin){
+      myName=(typeof extractNickname==="function")?extractNickname(_user.displayName,_user.nickname):(_user.nickname||_user.displayName||"");
+    }
+
+    // Fetch parcels (filter by telesale if not admin)
     (async function(){
       try{
         var all=[];var page=0;var size=1000;
+        var qry="parcel_checks?select=cod,date,flash_status&order=created_at.desc";
+        if(myName)qry+="&telesale=eq."+encodeURIComponent(myName);
         while(true){
           var from=page*size;var to=from+size-1;
-          var r=await api("parcel_checks?select=cod,date,flash_status&order=created_at.desc",{range:from+"-"+to});
+          var r=await api(qry,{range:from+"-"+to});
           if(!r||r.length===0)break;
           all=all.concat(r);
           if(r.length<size)break;
