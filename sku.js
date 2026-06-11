@@ -80,26 +80,16 @@ function getCats(){ var c=["ทั้งหมด"]; CAT.forEach(function(p){if(
 // ── React field helpers (bulletproof — ใช้ได้กับ React 18 production) ──
 function triggerReactChange(el,val){
   try{
-    // Method 1: execCommand — จำลองการพิมพ์จริง React รับ 100%
-    el.focus();
-    if(el.select) el.select();
-    else if(el.setSelectionRange) el.setSelectionRange(0,el.value?el.value.length:99999);
-    if(document.execCommand("insertText",false,val)){
-      return; // success
-    }
-  }catch(e){}
-  try{
-    // Method 2: React __reactProps onChange
+    // Method 1: React __reactProps onChange — ไม่ขโมย focus
     var propsKey=Object.keys(el).find(function(k){return k.startsWith("__reactProps");});
     if(propsKey && el[propsKey] && el[propsKey].onChange){
-      // Set DOM value first
       el.value=val;
       el[propsKey].onChange({target:el,currentTarget:el});
       return;
     }
   }catch(e){}
   try{
-    // Method 3: Walk React fiber tree
+    // Method 2: Walk React fiber tree
     var fiberKey=Object.keys(el).find(function(k){return k.startsWith("__reactFiber")||k.startsWith("__reactInternalInstance");});
     if(fiberKey){
       var fiber=el[fiberKey];
@@ -114,12 +104,19 @@ function triggerReactChange(el,val){
     }
   }catch(e){}
   try{
-    // Method 4: Native setter + InputEvent
+    // Method 3: Native setter + InputEvent
     var proto=el.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
     var setter=Object.getOwnPropertyDescriptor(proto,"value").set;
     setter.call(el,val);
     el.dispatchEvent(new InputEvent("input",{bubbles:true,data:val,inputType:"insertText"}));
     el.dispatchEvent(new Event("change",{bubbles:true}));
+  }catch(e){}
+  try{
+    // Method 4: execCommand (last resort — ต้อง focus)
+    el.focus();
+    if(el.select) el.select();
+    else if(el.setSelectionRange) el.setSelectionRange(0,el.value?el.value.length:99999);
+    document.execCommand("insertText",false,val);
   }catch(e){}
 }
 function setReactInput(input,val){ triggerReactChange(input,val); }
@@ -158,12 +155,15 @@ function syncFormFromCart(){
   });
 
   // Find Remark field — ใช้เป็นช่องแจ้งสินค้า (auto-fill เสมอ)
+  // ⚠️ ข้าม element ที่อยู่ใน #sku-picker
   var remarkField=null;
-  // วิธี 1: หาจาก placeholder
+  var picker=document.getElementById("sku-picker");
+  // วิธี 1: หาจาก placeholder "สินค้า จำนวน"
   document.querySelectorAll("textarea,input[type='text'],input:not([type])").forEach(function(el){
     if(remarkField) return;
+    if(picker && picker.contains(el)) return; // ข้าม element ใน picker
     var ph=(el.placeholder||"");
-    if(ph.indexOf("สินค้า")>=0 || ph.indexOf("จำนวน")>=0) remarkField=el;
+    if(ph.indexOf("สินค้า")>=0 && ph.indexOf("จำนวน")>=0) remarkField=el;
   });
   // วิธี 2: หาจาก label "หมายเหตุ"
   if(!remarkField){
@@ -236,7 +236,7 @@ function renderPicker(){
   var h='';
 
   // Search bar
-  h+='<div style="margin-bottom:8px"><input id="sku-search" value="'+esc(SEARCH)+'" placeholder="🔍 ค้นหา SKU / ชื่อสินค้า..." style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;background:#fff" /></div>';
+  h+='<div style="margin-bottom:8px"><input id="sku-search" value="'+esc(SEARCH)+'" placeholder="🔍 ค้นหา SKU / ชื่อ..." style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;background:#fff" /></div>';
 
   // Category tabs
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
@@ -299,8 +299,7 @@ function renderPicker(){
   // Search
   var si=_pickerEl.querySelector("#sku-search");
   if(si){
-    si.focus(); // maintain focus
-    si.setSelectionRange(SEARCH.length,SEARCH.length);
+    if(SEARCH){ si.focus(); si.setSelectionRange(SEARCH.length,SEARCH.length); }
     si.oninput=function(){ SEARCH=si.value; renderPicker(); };
   }
   // Cat tabs
