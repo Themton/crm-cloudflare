@@ -749,24 +749,15 @@ function enhanceParcelStats(){
 // Enhance return rate — green when 0 returns
 function enhanceReturnRate(){
   try{
-    // Find ส่งคืน/ตีกลับ card
-    var returnCard=null;
+    // Find cards
+    var returnCard=null,rateCard=null;
     document.querySelectorAll("div").forEach(function(d){
-      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
-    });
-    // Find อัตราตีกลับ card
-    var rateCard=null;
-    document.querySelectorAll("div").forEach(function(d){
-      if(d.textContent.trim()==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
-    });
-    // Find alert banner
-    var banner=null;
-    document.querySelectorAll("div").forEach(function(d){
-      if((d.textContent||"").indexOf("\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a")>=0&&(d.style.background||"").indexOf("gradient")>=0)banner=d;
-      if((d.textContent||"").indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0&&d.style.borderRadius)banner=d;
+      var t=d.textContent.trim();
+      if(t==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
+      if(t==="\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)rateCard=d.parentElement;
     });
 
-    // Check if returns = 0
+    // Get return count
     var returnCount=0;
     if(returnCard){
       var numEl=returnCard.querySelector("div:nth-child(2)");
@@ -774,31 +765,45 @@ function enhanceReturnRate(){
     }
 
     if(returnCount===0){
-      // Make return card green
-      if(returnCard&&!returnCard.getAttribute("data-sku-green")){
-        returnCard.setAttribute("data-sku-green","1");
+      // Remove stale สูญเสีย badge
+      if(returnCard){
+        returnCard.querySelectorAll(".sku-return-cod").forEach(function(el){el.remove();});
         returnCard.style.borderColor="#22c55e";
-        var numEl=returnCard.querySelector("div:nth-child(2)");
-        if(numEl)numEl.style.color="#22c55e";
+        var n=returnCard.querySelector("div:nth-child(2)");
+        if(n)n.style.color="#22c55e";
       }
-      // Make rate card green
-      if(rateCard&&!rateCard.getAttribute("data-sku-green")){
-        rateCard.setAttribute("data-sku-green","1");
+      if(rateCard){
         rateCard.style.borderColor="#22c55e";
-        var pctEl=rateCard.querySelector("div:nth-child(2)");
-        if(pctEl)pctEl.style.color="#22c55e";
+        var p=rateCard.querySelector("div:nth-child(2)");
+        if(p)p.style.color="#22c55e";
       }
-      // Replace banner with green success
-      if(banner&&!banner.getAttribute("data-sku-green")){
-        banner.setAttribute("data-sku-green","1");
-        banner.style.background="linear-gradient(135deg,#065f46,#047857)";
-        banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e23\u0e31\u0e1a\u0e02\u0e2d\u0e07\u0e2b\u0e21\u0e14</div></div><div style="margin-left:auto;font-size:36px;font-weight:800;color:#a7f3d0">0%</div></div>';
+      // Create green banner if no banner exists
+      var existingBanner=document.getElementById("sku-green-banner");
+      var origBanner=null;
+      document.querySelectorAll("div").forEach(function(d){
+        if((d.textContent||"").indexOf("\u0e41\u0e08\u0e49\u0e07\u0e40\u0e15\u0e37\u0e2d\u0e19")>=0&&d.style&&(d.style.background||"").indexOf("gradient")>=0)origBanner=d;
+      });
+      if(origBanner){
+        origBanner.style.background="linear-gradient(135deg,#065f46,#047857)";
+        origBanner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08</div></div><div style="margin-left:auto;font-size:36px;font-weight:800;color:#a7f3d0">0%</div></div>';
+      }else if(!existingBanner){
+        // Find stats cards container to insert banner after
+        var statsRow=null;
+        if(returnCard)statsRow=returnCard.parentElement;
+        if(statsRow){
+          var banner=document.createElement("div");
+          banner.id="sku-green-banner";
+          banner.style.cssText="background:linear-gradient(135deg,#065f46,#047857);border-radius:12px;margin:16px 0;overflow:hidden";
+          banner.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:16px 24px"><span style="font-size:36px">\u2705</span><div><div style="font-size:16px;font-weight:700;color:#fff">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a!</div><div style="font-size:13px;color:#a7f3d0;margin-top:4px">\u0e17\u0e38\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08</div></div><div style="margin-left:auto;font-size:36px;font-weight:800;color:#a7f3d0">0%</div></div>';
+          try{statsRow.after(banner);}catch(e){statsRow.parentNode.appendChild(banner);}
+        }
       }
     }else{
-      // Reset green state if returns > 0
-      if(returnCard)returnCard.removeAttribute("data-sku-green");
-      if(rateCard)rateCard.removeAttribute("data-sku-green");
-      if(banner)banner.removeAttribute("data-sku-green");
+      // Has returns — remove green banner, reset styles
+      var gb=document.getElementById("sku-green-banner");
+      if(gb)gb.remove();
+      if(returnCard)returnCard.style.borderColor="";
+      if(rateCard)rateCard.style.borderColor="";
     }
   }catch(e){}
 }
