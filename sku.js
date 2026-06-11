@@ -555,20 +555,19 @@ function renderSkuPage(){
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
 // Enhance parcel stats — replace COD card with orders-based calculation
-var _parcelEnhanced=false;
+var _lastParcelMonth="";
+var _lastParcelTotal=-1;
+var _forceInterval=null;
 function enhanceParcelStats(){
   try{
-    // Find ยอด COD card label
     var codLabel=null;
     document.querySelectorAll("div").forEach(function(d){
       if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)codLabel=d;
     });
     if(!codLabel)return;
     var codCard=codLabel.parentElement;
-    if(!codCard||codCard.getAttribute("data-sku-fixed"))return;
-    codCard.setAttribute("data-sku-fixed","1");
 
-    // Also add returned COD badge
+    // Returned COD badge
     var returnCard=null;
     document.querySelectorAll("div").forEach(function(d){
       if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a"&&d.parentElement)returnCard=d.parentElement;
@@ -588,13 +587,7 @@ function enhanceParcelStats(){
       }
     }
 
-    // Get user
-    var _user=null;
-    try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
-    var isAdmin=_user&&_user.role==="admin";
-    var myEmail=(_user&&_user.username)||"";
-
-    // Detect month from table rows
+    // Detect month from table
     var ym="";
     document.querySelectorAll("td").forEach(function(td){
       if(ym)return;
@@ -609,11 +602,23 @@ function enhanceParcelStats(){
     });
     if(!ym){var now=new Date();ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");}
 
-    // Show loading
-    var valEl=codCard.querySelector("div:nth-child(2)");
-    if(valEl)valEl.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...";
+    // If same month and already have result, just force update card
+    if(ym===_lastParcelMonth&&_lastParcelTotal>=0){
+      var v=codCard.querySelector("div:nth-child(2)");
+      if(v)v.textContent="\u0e3f"+_lastParcelTotal.toLocaleString();
+      return;
+    }
 
-    // Fetch from orders table (same as report page)
+    // New month detected — fetch fresh data
+    _lastParcelMonth=ym;
+    var _user=null;
+    try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
+    var isAdmin=_user&&_user.role==="admin";
+    var myEmail=(_user&&_user.username)||"";
+
+    var v2=codCard.querySelector("div:nth-child(2)");
+    if(v2)v2.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...";
+
     (async function(){
       try{
         var all=[];var pg=0;
@@ -627,29 +632,23 @@ function enhanceParcelStats(){
         }
         var filtered=all.filter(function(o){return(o.timestamp||"").substring(0,7)===ym;});
         var total=filtered.reduce(function(s,o){return s+(Number(o.sale_price)||Number(o.cod)||0);},0);
+        _lastParcelTotal=total;
 
-        // Force update card — use interval to beat React re-renders
-        var attempts=0;
-        var forceUpdate=setInterval(function(){
+        // Force update with interval
+        if(_forceInterval)clearInterval(_forceInterval);
+        var att=0;
+        _forceInterval=setInterval(function(){
           var card=null;
           document.querySelectorAll("div").forEach(function(d){
             if(d.textContent.trim()==="\u0e22\u0e2d\u0e14 COD"&&d.parentElement)card=d.parentElement;
           });
           if(card){
             var v=card.querySelector("div:nth-child(2)");
-            if(v){
-              var current=v.textContent.replace(/[^\d]/g,"");
-              if(current!==String(total)){
-                v.textContent="\u0e3f"+total.toLocaleString();
-                v.style.color="#8b5cf6";
-              }
-            }
+            if(v){v.textContent="\u0e3f"+total.toLocaleString();v.style.color="#8b5cf6";}
           }
-          attempts++;
-          if(attempts>20)clearInterval(forceUpdate);
+          att++;if(att>20)clearInterval(_forceInterval);
         },500);
-        // Stop after 10 seconds
-        setTimeout(function(){clearInterval(forceUpdate);},10000);
+        setTimeout(function(){clearInterval(_forceInterval);},10000);
       }catch(e){}
     })();
   }catch(e){}
