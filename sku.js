@@ -436,8 +436,67 @@ function renderSkuPage(){
     h+='</div>';
   });
   if(CAT.length===0)h+='<div style="text-align:center;padding:40px;color:#94a3b8;font-size:14px">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 \u2014 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e14\u0e49\u0e32\u0e19\u0e1a\u0e19</div>';
+  // Missing orders checker section
+  h+='<div style="margin-top:30px;padding:16px;background:#fff;border-radius:12px;border:1.5px solid #e2e8f0">';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+  h+='<span style="font-size:18px">\uD83D\uDD0D</span>';
+  h+='<span style="font-size:15px;font-weight:700;color:#1e293b">\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e02\u0e32\u0e14\u0e2b\u0e32\u0e22</span>';
+  h+='<button id="sp-check-missing" style="margin-left:auto;padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">\u0e40\u0e17\u0e35\u0e22\u0e1a Orders vs Parcels</button>';
+  h+='</div>';
+  h+='<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">\u0e40\u0e17\u0e35\u0e22\u0e1a\u0e15\u0e32\u0e23\u0e32\u0e07 orders \u0e01\u0e31\u0e1a parcel_checks \u0e2b\u0e32\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e25\u0e02 tracking</div>';
+  h+='<div id="sp-missing-result"></div>';
+  h+='</div>';
+
   h+='</div>'; // close max-width wrapper
   page.innerHTML=h;
+  // Bind check missing
+  var cmb=document.getElementById("sp-check-missing");
+  if(cmb)cmb.onclick=async function(){
+    cmb.disabled=true;cmb.textContent="\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08...";
+    var res=document.getElementById("sp-missing-result");
+    try{
+      // Fetch all orders
+      var orders=[];var pg=0;
+      while(true){
+        var from=pg*1000;var to=from+999;
+        var r=await api("orders?select=order_id,timestamp,mobile_no,name,sale_price,cod,tracking_no,remark,account_email&order=timestamp.desc",{range:from+"-"+to});
+        if(!r||r.length===0)break;orders=orders.concat(r);if(r.length<1000)break;pg++;
+      }
+      // Fetch all parcels
+      var parcels=[];pg=0;
+      while(true){
+        var from2=pg*1000;var to2=from2+999;
+        var r2=await api("parcel_checks?select=tracking_no,customer_name,phone,cod,date&order=created_at.desc",{range:from2+"-"+to2});
+        if(!r2||r2.length===0)break;parcels=parcels.concat(r2);if(r2.length<1000)break;pg++;
+      }
+      // Compare — build set of parcel tracking numbers
+      var pSet={};parcels.forEach(function(p){if(p.tracking_no)pSet[p.tracking_no.trim()]=1;});
+      var missing=orders.filter(function(o){
+        var trk=(o.tracking_no||"").trim();
+        return !trk||!pSet[trk];
+      });
+      // Display
+      var rh='<div style="padding:10px;border-radius:8px;background:'+(missing.length>0?'#fef2f2':'#f0fdf4')+';margin-bottom:10px;font-size:13px;font-weight:600;color:'+(missing.length>0?'#dc2626':'#16a34a')+'">';
+      rh+=missing.length>0?'\u26A0 \u0e1e\u0e1a '+missing.length+' \u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e19 parcel_checks (orders: '+orders.length+', parcels: '+parcels.length+')':'\u2705 \u0e15\u0e23\u0e07\u0e01\u0e31\u0e19\u0e2b\u0e21\u0e14! (orders: '+orders.length+', parcels: '+parcels.length+')';
+      rh+='</div>';
+      if(missing.length>0){
+        var totalMiss=0;
+        rh+='<table style="width:100%;font-size:12px;border-collapse:collapse">';
+        rh+='<tr style="background:#fef2f2"><th style="padding:6px;text-align:left">#</th><th style="padding:6px;text-align:left">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th style="padding:6px;text-align:left">\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32</th><th style="padding:6px;text-align:left">\u0e40\u0e1a\u0e2d\u0e23\u0e4c</th><th style="padding:6px;text-align:right">\u0e22\u0e2d\u0e14</th><th style="padding:6px;text-align:left">Tracking</th><th style="padding:6px;text-align:left">\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e2b\u0e15\u0e38</th></tr>';
+        missing.forEach(function(o,idx){
+          var amt=Number(o.sale_price)||Number(o.cod)||0;totalMiss+=amt;
+          var ts=(o.timestamp||"").substring(0,10);
+          rh+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:6px">'+(idx+1)+'</td><td style="padding:6px">'+esc(ts)+'</td><td style="padding:6px">'+esc(o.name||"?")+'</td><td style="padding:6px">'+esc(o.mobile_no||"?")+'</td><td style="padding:6px;text-align:right;font-weight:700;color:#dc2626">\u0e3f'+amt.toLocaleString()+'</td><td style="padding:6px;font-family:monospace;font-size:10px">'+esc(o.tracking_no||"\u0e44\u0e21\u0e48\u0e21\u0e35")+'</td><td style="padding:6px;font-size:11px;color:#64748b">'+esc((o.remark||"").substring(0,30))+'</td></tr>';
+        });
+        rh+='<tr style="background:#fef2f2;font-weight:700"><td colspan="4" style="padding:8px">\u0e23\u0e27\u0e21\u0e22\u0e2d\u0e14\u0e17\u0e35\u0e48\u0e2b\u0e32\u0e22</td><td style="padding:8px;text-align:right;color:#dc2626">\u0e3f'+totalMiss.toLocaleString()+'</td><td colspan="2"></td></tr>';
+        rh+='</table>';
+      }
+      res.innerHTML=rh;
+    }catch(e){
+      res.innerHTML='<div style="color:#ef4444">\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+esc(e.message)+'</div>';
+    }
+    cmb.disabled=false;cmb.textContent="\u0e40\u0e17\u0e35\u0e22\u0e1a Orders vs Parcels";
+  };
   // Bind add
   var ab=document.getElementById("sp-add");
   if(ab)ab.onclick=function(){
