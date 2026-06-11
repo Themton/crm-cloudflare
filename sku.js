@@ -12,7 +12,8 @@ if(localStorage.getItem("sku_page_active")==="1"){
   else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(_earlyPage);});
 }
 
-// Immediate: ซ่อนปุ่มรหัสสินค้าเดิมให้เร็วที่สุด ไม่ให้กระพริบ
+// Immediate: ซ่อนปุ่มรหัสสินค้าเดิม + auto-click วันนี้ ให้เร็วที่สุด
+var _parcelDefaultSet=false;
 var _rapidHide=setInterval(function(){
   try{
     // ซ่อนปุ่มในฟอร์ม
@@ -29,13 +30,26 @@ var _rapidHide=setInterval(function(){
         }
       }
     });
-    // ซ่อนแถบ product codes ด้านบน (ที่มี ×)
+    // ซ่อนแถบ product codes ด้านบน
     var newPC=document.getElementById("_newPC");
     if(newPC){
       var bar=newPC.parentElement;
       if(bar&&!bar.getAttribute("data-sku-hidden")){
         for(var j=0;j<bar.children.length;j++)bar.children[j].style.display="none";
         bar.setAttribute("data-sku-hidden","1");
+      }
+    }
+    // Auto-click วันนี้ ทันทีที่เจอ filter bar
+    if(!_parcelDefaultSet){
+      var filterBar=null;
+      document.querySelectorAll("span,div").forEach(function(el){
+        if((el.textContent||"").trim()==="\uD83D\uDCC5 \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32:"&&el.parentElement)filterBar=el.parentElement;
+      });
+      if(filterBar){
+        _parcelDefaultSet=true;
+        filterBar.querySelectorAll("button").forEach(function(b){
+          if((b.textContent||"").trim()==="\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49")b.click();
+        });
       }
     }
   }catch(e){}
@@ -554,25 +568,14 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
-// Inject "เดือนก่อน" button + auto-select "วันนี้" on first load
-var _parcelDefaultSet=false;
+// Inject "เดือนก่อน" button
 function injectPrevMonthBtn(){
   try{
     var filterBar=null;
     document.querySelectorAll("span,div").forEach(function(el){
       if((el.textContent||"").trim()==="\uD83D\uDCC5 \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32:"&&el.parentElement)filterBar=el.parentElement;
     });
-    if(!filterBar)return;
-
-    // Auto-click "วันนี้" on first load
-    if(!_parcelDefaultSet){
-      _parcelDefaultSet=true;
-      filterBar.querySelectorAll("button").forEach(function(b){
-        if((b.textContent||"").trim()==="\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49")b.click();
-      });
-    }
-
-    if(filterBar.querySelector("#sku-prev-month"))return;
+    if(!filterBar||filterBar.querySelector("#sku-prev-month"))return;
 
     // Find "เมื่อวาน" button to insert after it
     var yesterdayBtn=null;
