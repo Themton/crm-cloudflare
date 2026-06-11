@@ -160,10 +160,11 @@ async function syncMissingOrders(){
 
   if(!missing.length){log('✅ ครบแล้ว!','ok');pb(100);return;}
 
+  // Only keep columns that D1 has
+  var COLS=['order_id','timestamp','mobile_no','name','address','sub_district','district','province','zip','customer_fb_line','sales_channel','sales_person','account_email','sale_price','cod','remark','status','tracking_no','flash_status','sort_code'];
   var done=0,fail=0;
   for(var i=0;i<missing.length;i++){
-    var rec=Object.assign({},missing[i]);
-    delete rec.id;
+    var rec={};COLS.forEach(function(c2){if(missing[i][c2]!==undefined)rec[c2]=missing[i][c2];});
     try{
       var r=await fetch(c.cfUrl+'/rest/v1/orders',{method:'POST',headers:Object.assign({},hdr(c.cfKey),{Prefer:'return=minimal'}),body:JSON.stringify(rec)});
       if(r.ok){done++;}
