@@ -835,53 +835,42 @@ function enhanceHRPage(){
     // HR access control — hide non-telesale sections on employee page
     var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
     if(_user&&_user.role==="hr"){
-      // ซ่อนส่วนที่ HR ไม่ควรเห็น
-      var hideTexts=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"];
-      // Find ALL elements and check text
-      document.querySelectorAll("div,span,h2,h3").forEach(function(el){
-        var t=(el.textContent||"").trim();
-        for(var i=0;i<hideTexts.length;i++){
-          // Match section headers like "🔒 ผู้ดูแลระบบ 2 คน" or "💰 บัญชี 2 คน"
-          if(t.indexOf(hideTexts[i])>=0&&t.indexOf("\u0e04\u0e19")>=0&&el.children.length<=5){
-            // This is a section header — hide it and all siblings until next section
-            var container=el;
-            // Walk up to find the colored background container
-            while(container&&!((container.style.background||container.style.backgroundColor||"").length>3))container=container.parentElement;
-            if(container){
-              container.style.display="none";
-              // Hide sibling rows after this section
-              var sib=container.nextElementSibling;
-              while(sib){
-                var sibBg=(sib.style.background||sib.style.backgroundColor||"");
-                // Stop at next section header (has colored bg)
-                if(sibBg.length>3){
-                  var sibText=(sib.textContent||"");
-                  if(sibText.indexOf("\u0e04\u0e19")>=0)break;
-                }
-                sib.style.display="none";
-                sib=sib.nextElementSibling;
-              }
-            }
-            break;
-          }
+      // ซ่อนส่วนที่ HR ไม่ควรเห็น — scan ทุก element หา section header
+      var hideKeys=["\u0e1c\u0e39\u0e49\u0e14\u0e39\u0e41\u0e25\u0e23\u0e30\u0e1a\u0e1a","\u0e1a\u0e31\u0e0d\u0e0a\u0e35","\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"];
+      var allDivs=document.querySelectorAll("div");
+      allDivs.forEach(function(d){
+        if(d.getAttribute("data-hr-done"))return;
+        var txt=(d.textContent||"").trim();
+        // ต้องเป็นส่วนหัว section: มีคำ "คน" + หนึ่งใน hideKeys + ไม่ใช่ container ใหญ่
+        var isSection=false;var isHR=false;
+        if(txt.indexOf("\u0e04\u0e19")>=0&&d.childElementCount<=3){
+          for(var i=0;i<hideKeys.length;i++){if(txt.indexOf(hideKeys[i])>=0){isSection=true;break;}}
+          if(!isSection&&/^.{0,3}HR\s/.test(txt))isHR=true;
         }
-        // Also hide HR section (except keep own row visible)
-        if(t.indexOf("HR")>=0&&t.indexOf("\u0e04\u0e19")>=0&&el.children.length<=5&&t.length<20){
-          var container2=el;
-          while(container2&&!((container2.style.background||container2.style.backgroundColor||"").length>3))container2=container2.parentElement;
-          if(container2){
-            container2.style.display="none";
-            var sib2=container2.nextElementSibling;
-            while(sib2){
-              var sib2Bg=(sib2.style.background||sib2.style.backgroundColor||"");
-              if(sib2Bg.length>3&&(sib2.textContent||"").indexOf("\u0e04\u0e19")>=0)break;
-              // Keep own row, hide others
-              var email=(sib2.textContent||"");
-              if(email.indexOf(_user.username||"NOMATCH")<0)sib2.style.display="none";
-              sib2=sib2.nextElementSibling;
-            }
+        if(!isSection&&!isHR)return;
+        // Check if this looks like a section header (has colored bg via computed style)
+        var bg=window.getComputedStyle(d).backgroundColor;
+        if(bg==="rgba(0, 0, 0, 0)"||bg==="transparent")return;
+        d.setAttribute("data-hr-done","1");
+        d.style.display="none";
+        // Hide siblings until next section header with colored bg
+        var sib=d.nextElementSibling;
+        while(sib){
+          var sibBg=window.getComputedStyle(sib).backgroundColor;
+          var sibText=(sib.textContent||"");
+          if(sibBg!=="rgba(0, 0, 0, 0)"&&sibBg!=="transparent"&&sibText.indexOf("\u0e04\u0e19")>=0)break;
+          if(isHR){
+            // HR section: keep own account visible
+            if(sibText.indexOf(_user.username||"NOMATCH")>=0){sib=sib.nextElementSibling;continue;}
           }
+          sib.style.display="none";
+          sib=sib.nextElementSibling;
         }
+      });
+      // Also hide "เพิ่มหลายคน" and "+เพิ่ม" buttons for HR
+      document.querySelectorAll("button").forEach(function(b){
+        var t=(b.textContent||"").trim();
+        if(t.indexOf("\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2b\u0e25\u0e32\u0e22\u0e04\u0e19")>=0||t==="+ \u0e40\u0e1e\u0e34\u0e48\u0e21"){}
       });
     }
 
