@@ -476,6 +476,37 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
+// Enhance parcel stats — add returned COD amount to stat card
+function enhanceParcelStats(){
+  try{
+    // Find the "ส่งคืน/ตีกลับ" stat card
+    var cards=document.querySelectorAll("div");
+    var returnCard=null;
+    cards.forEach(function(d){
+      if(d.textContent.trim()==="\u0e2a\u0e48\u0e07\u0e04\u0e37\u0e19/\u0e15\u0e35\u0e01\u0e25\u0e31\u0e1a" && d.parentElement){
+        returnCard=d.parentElement;
+      }
+    });
+    if(!returnCard || returnCard.querySelector(".sku-return-cod")) return;
+
+    // Extract COD amount from alert banner
+    var codAmount=0;
+    document.querySelectorAll("div,b").forEach(function(el){
+      var t=el.textContent||"";
+      var m=t.match(/COD \u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 [\u0e3f\u20b9]?([\d,]+)/);
+      if(m) codAmount=parseInt(m[1].replace(/,/g,""))||0;
+    });
+
+    if(codAmount>0){
+      var badge=document.createElement("div");
+      badge.className="sku-return-cod";
+      badge.style.cssText="font-size:12px;color:#ef4444;font-weight:700;margin-top:4px";
+      badge.textContent="\u0e2a\u0e39\u0e0d\u0e40\u0e2a\u0e35\u0e22 \u0e3f"+codAmount.toLocaleString();
+      returnCard.appendChild(badge);
+    }
+  }catch(e){}
+}
+
 function tidyCodesBar(){
   try{
     var inp=document.getElementById("_newPC");
@@ -505,7 +536,7 @@ function startWatch(){
   _ob=new MutationObserver(function(){if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
-      tidyCodesBar();injectSidebar();}catch(e){}
+      tidyCodesBar();injectSidebar();enhanceParcelStats();}catch(e){}
   },400);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
