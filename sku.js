@@ -554,15 +554,25 @@ function renderSkuPage(){
 // Observer
 var _tm=null,_ob=null;
 // Hide ugly product codes bar, show clean summary
-// Inject "เดือนก่อน" button into parcel check filter
+// Inject "เดือนก่อน" button + auto-select "วันนี้" on first load
+var _parcelDefaultSet=false;
 function injectPrevMonthBtn(){
   try{
-    // Find the filter bar by looking for "ช่วงเวลา" text
     var filterBar=null;
     document.querySelectorAll("span,div").forEach(function(el){
       if((el.textContent||"").trim()==="\uD83D\uDCC5 \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32:"&&el.parentElement)filterBar=el.parentElement;
     });
-    if(!filterBar||filterBar.querySelector("#sku-prev-month"))return;
+    if(!filterBar)return;
+
+    // Auto-click "วันนี้" on first load
+    if(!_parcelDefaultSet){
+      _parcelDefaultSet=true;
+      filterBar.querySelectorAll("button").forEach(function(b){
+        if((b.textContent||"").trim()==="\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49")b.click();
+      });
+    }
+
+    if(filterBar.querySelector("#sku-prev-month"))return;
 
     // Find "เมื่อวาน" button to insert after it
     var yesterdayBtn=null;
