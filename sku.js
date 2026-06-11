@@ -266,19 +266,45 @@ function createFAB(){
 
 // Observer
 var _tm=null,_ob=null;
+// Hide ugly product codes bar, show clean summary
+function tidyCodesBar(){
+  try{
+    var inp=document.getElementById("_newPC");
+    if(!inp)return;
+    var bar=inp.parentElement;
+    if(!bar)return;
+    // Already hidden?
+    if(bar.getAttribute("data-sku-hidden"))return;
+    bar.setAttribute("data-sku-hidden","1");
+    // Hide all children
+    for(var i=0;i<bar.children.length;i++)bar.children[i].style.display="none";
+    // Insert summary
+    var cats={};CAT.forEach(function(p){cats[p.cat]=(cats[p.cat]||0)+1;});
+    var sum=document.createElement("div");
+    sum.style.cssText="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:4px 0";
+    sum.innerHTML='<span style="font-size:12px;color:#92400e;font-weight:600">\uD83D\uDCE6 '+CAT.length+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span>';
+    Object.keys(cats).forEach(function(c){
+      sum.innerHTML+='<span style="font-size:11px;padding:3px 10px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a;color:#92400e">'+esc(c)+' ('+cats[c]+')</span>';
+    });
+    sum.innerHTML+='<button type="button" onclick="document.getElementById(\'sku-fab\').click()" style="font-size:11px;padding:3px 10px;border-radius:6px;background:#d97706;border:none;color:#fff;cursor:pointer;font-family:inherit">\u2699 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23</button>';
+    bar.appendChild(sum);
+  }catch(e){}
+}
+
 function startWatch(){
   if(_ob)return;
   _ob=new MutationObserver(function(){if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
-      if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}}catch(e){}
+      if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
+      tidyCodesBar();}catch(e){}
   },400);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
 
 async function init(){
   await loadCat();createFAB();startWatch();
-  setTimeout(function(){try{injectPicker();}catch(e){}},1500);
-  setTimeout(function(){try{injectPicker();}catch(e){}},4000);
+  setTimeout(function(){try{injectPicker();tidyCodesBar();}catch(e){}},1500);
+  setTimeout(function(){try{injectPicker();tidyCodesBar();}catch(e){}},4000);
   console.log("[SKU] v3 loaded "+CAT.length+" products");
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(init,500);});
