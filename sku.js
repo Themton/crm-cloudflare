@@ -246,16 +246,16 @@ function injectPicker(){
     var labels=document.querySelectorAll("label");var tgt=null;
     labels.forEach(function(l){if((l.textContent||"").indexOf("\u0e23\u0e2b\u0e31\u0e2a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0)tgt=l;});
     if(!tgt)return false;
-    var sec=tgt.parentElement;if(!sec||sec.querySelector("#sku-picker"))return true;
+    var sec=tgt.parentElement;if(!sec||document.getElementById("sku-picker"))return true;
     var bd=null;for(var i=0;i<sec.children.length;i++){if(sec.children[i].tagName==="DIV"&&sec.children[i].querySelector("button")){bd=sec.children[i];break;}}
     if(!bd)return false;
-    // ใช้ CSS attribute ซ่อน — ไม่แตะ inline style ของ React
     bd.setAttribute("data-hidden","1");
     _origBtnsDiv=bd;
-    // ไม่เปลี่ยน label innerHTML — ปล่อย React จัดการ
+    // สร้าง picker นอก React tree — ใส่หลัง section ไม่ใช่ข้างใน
     var pk=document.createElement("div");pk.id="sku-picker";
     pk.style.cssText="margin-top:6px;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px;background:#fafafa;max-height:360px;overflow-y:auto";
-    sec.appendChild(pk);_pickerEl=pk;
+    sec.parentElement.insertBefore(pk,sec.nextSibling);
+    _pickerEl=pk;
     CART={};SEARCH="";FILTER="ALL";renderPicker();return true;
   }catch(e){return false;}
 }
@@ -921,11 +921,13 @@ function startWatch(){
   });
   document.addEventListener("focusout",function(e){
     if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"){
-      _typingTimer=setTimeout(function(){_typing=false;},1000);
+      _typingTimer=setTimeout(function(){_typing=false;},2000);
     }
   });
+  // Also suppress when order form is open
+  document.addEventListener("keydown",function(){_typing=true;clearTimeout(_typingTimer);_typingTimer=setTimeout(function(){_typing=false;},2000);});
+
   _ob=new MutationObserver(function(){
-    // Skip ALL processing while user is typing (1s after blur)
     if(_typing)return;
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
