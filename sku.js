@@ -27,20 +27,7 @@ _skuStyle.textContent=[
 var _parcelFilterRestored=false;
 var _rapidHide=setInterval(function(){
   try{
-    // ซ่อนปุ่มในฟอร์ม (เฉพาะ label ไม่สแกน div ทั้งหมด)
-    var labels=document.querySelectorAll("label");
-    labels.forEach(function(l){
-      if((l.textContent||"").indexOf("\u0e23\u0e2b\u0e31\u0e2a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0){
-        var sec=l.parentElement;if(!sec)return;
-        for(var i=0;i<sec.children.length;i++){
-          var ch=sec.children[i];
-          if(ch.tagName==="DIV"&&ch.querySelector("button")&&!ch.getAttribute("data-hidden")){
-            ch.setAttribute("data-hidden","1");
-          }
-        }
-      }
-    });
-    // ซ่อนแถบ product codes
+    // ซ่อนแถบ product codes เท่านั้น (ไม่แตะฟอร์ม)
     var newPC=document.getElementById("_newPC");
     if(newPC){
       var bar=newPC.parentElement;
@@ -262,9 +249,10 @@ function injectPicker(){
     var sec=tgt.parentElement;if(!sec||sec.querySelector("#sku-picker"))return true;
     var bd=null;for(var i=0;i<sec.children.length;i++){if(sec.children[i].tagName==="DIV"&&sec.children[i].querySelector("button")){bd=sec.children[i];break;}}
     if(!bd)return false;
-    bd.style.cssText="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden";
+    // ใช้ CSS attribute ซ่อน — ไม่แตะ inline style ของ React
+    bd.setAttribute("data-hidden","1");
     _origBtnsDiv=bd;
-    tgt.innerHTML='\uD83D\uDCE6 \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 <span style="color:#ef4444">*</span>';
+    // ไม่เปลี่ยน label innerHTML — ปล่อย React จัดการ
     var pk=document.createElement("div");pk.id="sku-picker";
     pk.style.cssText="margin-top:6px;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px;background:#fafafa;max-height:360px;overflow-y:auto";
     sec.appendChild(pk);_pickerEl=pk;
@@ -937,7 +925,7 @@ function startWatch(){
     }
   });
   _ob=new MutationObserver(function(){
-    // Skip ALL processing while user is typing
+    // Skip ALL processing while user is typing (1s after blur)
     if(_typing)return;
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
