@@ -189,6 +189,41 @@ function customConfirm(msg,onYes,opts){
 }
 window.skuConfirm=customConfirm;
 
+// Pretty alert popup (single OK button) — แทน browser alert
+function customAlert(msg,opts){
+  opts=opts||{};
+  var m=String(msg||"");
+  // เดาไอคอน/สีจากเนื้อหา
+  var icon=opts.icon, color=opts.color;
+  if(!icon){
+    if(/❌|🚫|ผิดพลาด|ไม่สำเร็จ|ล้มเหลว|ห้าม|ไม่ถูกต้อง|เกิน|ไม่มี|กรุณา|กรอก|ต้อง/.test(m)){icon="\u26A0\uFE0F";color=color||"#dc2626";}
+    else if(/✅|สำเร็จ|เสร็จ|บันทึก|แล้ว/.test(m)){icon="\u2705";color=color||"#15803d";}
+    else{icon="\uD83D\uDD14";color=color||"#92400e";}
+  }
+  // เอา emoji นำหน้าออกจากข้อความ (กันซ้ำกับ icon)
+  var clean=m.replace(/^[\u2705\u274C\u26A0\uFE0F\uD83D\uDEAB\uD83D\uDD14\s]+/,"");
+  var ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s";
+  var box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center";
+  box.innerHTML='<div style="font-size:34px;margin-bottom:12px">'+icon+'</div>'
+    +'<div style="font-size:14px;color:#1e293b;font-weight:600;margin-bottom:20px;white-space:pre-line;line-height:1.5">'+esc(clean)+'</div>'
+    +'<button id="sku-al-ok" style="width:100%;padding:11px;border-radius:10px;border:none;background:'+color+';color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">\u0e15\u0e01\u0e25\u0e07</button>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  function close(){ov.remove();}
+  ov.onclick=function(e){if(e.target===ov)close();};
+  document.getElementById("sku-al-ok").onclick=close;
+}
+window.skuAlert=customAlert;
+
+// Override browser alert → pretty popup
+try{
+  var _origAlert=window.alert.bind(window);
+  window.alert=function(msg){try{customAlert(msg);}catch(e){_origAlert(msg);}};
+}catch(e){}
+
+
 // Render picker
 function renderPicker(){
   if(!_pickerEl)return;
