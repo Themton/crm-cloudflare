@@ -341,6 +341,9 @@ function renderMgr(){
 var _skuPageActive=false;
 function injectSidebar(){
   try{
+    // แสดงเมนูสินค้าเฉพาะ admin (หัวหน้า) กับ hr เท่านั้น
+    var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
+    if(!_user||(_user.role!=="admin"&&_user.role!=="hr"))return;
     var nav=document.querySelector("nav");
     if(!nav||nav.querySelector("#sku-nav-btn"))return;
     var refBtn=nav.querySelector("button");
@@ -370,6 +373,9 @@ function injectSidebar(){
 }
 
 function showSkuPage(){
+  // ตรวจสิทธิ์: เฉพาะ admin กับ hr
+  var _u=null;try{_u=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
+  if(!_u||(_u.role!=="admin"&&_u.role!=="hr")){localStorage.removeItem("sku_page_active");return;}
   _skuPageActive=true;
   localStorage.setItem("sku_page_active","1");
   var btn=document.getElementById("sku-nav-btn");
