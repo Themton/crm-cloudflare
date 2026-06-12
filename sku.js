@@ -79,7 +79,7 @@ var DEF=[
   {sku:"PRO-02",name:"โปรเซ็ตเริ่มต้น",cat:"โปรแยก"}
 ];
 
-var CAT=[],CMAP={},CART={},FILTER="ALL",SEARCH="";
+var CAT=[],CMAP={},CART={},FILTER="",SEARCH="";
 var _pickerEl=null,_origBtnsDiv=null;
 
 async function loadCat(){
@@ -99,7 +99,7 @@ async function saveCat(){
   if(r2===null)await api("app_settings",{method:"POST",body:{key:"product_codes",value:codes,updated_at:new Date().toISOString()}});
 }
 function getCats(){
-  var c=["ALL"];CAT.forEach(function(p){if(c.indexOf(p.cat)<0)c.push(p.cat);});return c;
+  var c=[];CAT.forEach(function(p){if(c.indexOf(p.cat)<0)c.push(p.cat);});return c;
 }
 
 // React helper
@@ -184,8 +184,9 @@ function renderPicker(){
   if(!_pickerEl)return;
   var cats=getCats();
   var filtered=CAT.filter(function(p){
-    if(FILTER!=="ALL"&&p.cat!==FILTER)return false;
     if(SEARCH){var q=SEARCH.toLowerCase();return p.sku.toLowerCase().indexOf(q)>=0||p.name.toLowerCase().indexOf(q)>=0;}
+    if(FILTER===""||FILTER==="ALL")return false;
+    if(p.cat!==FILTER)return false;
     return true;
   });
   var totalQty=0;
@@ -193,7 +194,7 @@ function renderPicker(){
 
   var h='<div style="margin-bottom:8px"><input id="sku-search" value="'+esc(SEARCH)+'" placeholder="\uD83D\uDD0D \u0e04\u0e49\u0e19\u0e2b\u0e32..." style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;background:#fff"/></div>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
-  cats.forEach(function(c){var act=FILTER===c;var label=c==="ALL"?"\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14":c;
+  cats.forEach(function(c){var act=FILTER===c;var label=c;
     h+='<button type="button" class="sku-tab" data-cat="'+esc(c)+'" style="padding:5px 12px;border-radius:8px;border:'+(act?'2px solid #d97706':'1.5px solid #e2e8f0')+';background:'+(act?'#fffbeb':'#fff')+';color:'+(act?'#92400e':'#64748b')+';font-size:12px;font-weight:'+(act?'700':'500')+';cursor:pointer;font-family:inherit">'+esc(label)+'</button>';
   });
   h+='</div>';
@@ -207,11 +208,15 @@ function renderPicker(){
   }
 
   if(filtered.length===0){
-    h+='<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px">\u0e44\u0e21\u0e48\u0e1e\u0e1a</div>';
+    if(FILTER===""&&!SEARCH){
+      h+='<div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">\uD83D\uDC46 \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2b\u0e21\u0e27\u0e14\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e14\u0e49\u0e32\u0e19\u0e1a\u0e19</div>';
+    }else{
+      h+='<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px">\u0e44\u0e21\u0e48\u0e1e\u0e1a</div>';
+    }
   }else{
     var lastCat="";
     filtered.forEach(function(p){
-      if(p.cat!==lastCat&&FILTER==="ALL"){
+      if(p.cat!==lastCat&&SEARCH){
         h+='<div style="font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;padding:3px 10px;border-radius:5px;margin:8px 0 4px;display:inline-block">'+esc(p.cat)+'</div>';
         lastCat=p.cat;
       }
@@ -256,7 +261,7 @@ function injectPicker(){
     pk.style.cssText="margin-top:6px;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px;background:#fafafa;max-height:360px;overflow-y:auto";
     sec.parentElement.insertBefore(pk,sec.nextSibling);
     _pickerEl=pk;
-    CART={};SEARCH="";FILTER="ALL";renderPicker();return true;
+    CART={};SEARCH="";FILTER="";renderPicker();return true;
   }catch(e){return false;}
 }
 
