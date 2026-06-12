@@ -90,6 +90,24 @@ async function loadCat(){
 }
 function rebuildMap(){CMAP={};CAT.forEach(function(p){CMAP[p.sku]=p;});}
 window.skuReloadCatalog=async function(){try{await loadCat();if(typeof renderPicker==="function")renderPicker();}catch(e){console.error("skuReload:",e)}};
+window.skuMatchProducts=function(remark){
+  try{
+    if(!remark||!CAT||!CAT.length)return"";
+    var txt=String(remark);
+    var found=[];
+    CAT.forEach(function(p){
+      if(!p.name||p.name==="(หมวดใหม่)")return;
+      if(txt.indexOf(p.name)>=0){found.push(p.sku+":"+p.name);}
+    });
+    return found.join(" | ");
+  }catch(e){return"";}
+};
+window.skuListAll=function(){
+  try{
+    if(!CAT||!CAT.length)return"";
+    return CAT.filter(function(p){return p.name!=="(หมวดใหม่)"}).map(function(p){return p.sku+":"+p.name+(p.cat?"("+p.cat+")":"")}).join(" | ");
+  }catch(e){return"";}
+};
 async function saveCat(){
   var v=JSON.stringify(CAT);
   var r=await api("app_settings?key=eq.sku_catalog",{method:"PATCH",body:{value:v,updated_at:new Date().toISOString()}});
