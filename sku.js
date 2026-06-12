@@ -90,6 +90,17 @@ async function loadCat(){
 }
 function rebuildMap(){CMAP={};CAT.forEach(function(p){CMAP[p.sku]=p;});}
 window.skuReloadCatalog=async function(){try{await loadCat();if(typeof renderPicker==="function")renderPicker();}catch(e){console.error("skuReload:",e)}};
+window.skuMatchArray=function(remark){
+  try{
+    if(!remark||!CAT||!CAT.length)return[];
+    var txt=String(remark),found=[];
+    CAT.forEach(function(p){
+      if(!p.name||p.name==="(หมวดใหม่)")return;
+      if(txt.indexOf(p.name)>=0){found.push(p.sku+":"+p.name);}
+    });
+    return found;
+  }catch(e){return[];}
+};
 window.skuMatchProducts=function(remark){
   try{
     if(!remark||!CAT||!CAT.length)return"";
