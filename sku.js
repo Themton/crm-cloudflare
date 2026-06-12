@@ -89,6 +89,7 @@ async function loadCat(){
   rebuildMap();
 }
 function rebuildMap(){CMAP={};CAT.forEach(function(p){CMAP[p.sku]=p;});}
+window.skuReloadCatalog=async function(){try{await loadCat();if(typeof renderPicker==="function")renderPicker();}catch(e){console.error("skuReload:",e)}};
 async function saveCat(){
   var v=JSON.stringify(CAT);
   var r=await api("app_settings?key=eq.sku_catalog",{method:"PATCH",body:{value:v,updated_at:new Date().toISOString()}});
