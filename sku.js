@@ -926,10 +926,19 @@ function tidyCodesBar(){
 
 function startWatch(){
   if(_ob)return;
+  // Track if user is typing
+  var _typing=false,_typingTimer=null;
+  document.addEventListener("focusin",function(e){
+    if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"){_typing=true;clearTimeout(_typingTimer);}
+  });
+  document.addEventListener("focusout",function(e){
+    if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"){
+      _typingTimer=setTimeout(function(){_typing=false;},1000);
+    }
+  });
   _ob=new MutationObserver(function(){
-    // Skip if user is typing in a form field — ป้องกันพิมพ์ได้ทีละตัว
-    var ae=document.activeElement;
-    if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.isContentEditable))return;
+    // Skip ALL processing while user is typing
+    if(_typing)return;
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
