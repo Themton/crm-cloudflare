@@ -344,7 +344,7 @@ function renderPicker(){
 function injectPicker(){
   try{
     var labels=document.querySelectorAll("label");var tgt=null;
-    labels.forEach(function(l){if((l.textContent||"").indexOf("\u0e23\u0e2b\u0e31\u0e2a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0)tgt=l;});
+    labels.forEach(function(l){if((l.textContent||"").indexOf("\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32")>=0)tgt=l;});
     if(!tgt)return false;
     var sec=tgt.parentElement;if(!sec||document.getElementById("sku-picker"))return true;
     var bd=null;for(var i=0;i<sec.children.length;i++){if(sec.children[i].tagName==="DIV"&&sec.children[i].querySelector("button")){bd=sec.children[i];break;}}
