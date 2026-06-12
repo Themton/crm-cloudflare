@@ -150,14 +150,18 @@ function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 // Custom toast (replaces alert)
 function toast(msg,type){
   var t=document.createElement("div");
-  t.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 24px;border-radius:12px;font-size:13px;font-family:inherit;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.15);animation:fadeIn .2s;max-width:90vw";
-  t.style.background=type==="error"?"#fef2f2":"#fffbeb";
-  t.style.color=type==="error"?"#dc2626":"#92400e";
-  t.style.border=type==="error"?"1.5px solid #fca5a5":"1.5px solid #fbbf24";
-  t.textContent=msg;
+  t.style.cssText="position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-10px);z-index:99999;padding:14px 28px;border-radius:14px;font-size:14px;font-family:inherit;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.18);opacity:0;transition:opacity .25s,transform .25s;max-width:90vw;display:flex;align-items:center;gap:10px";
+  var bg,col,bd,icon;
+  if(type==="error"){bg="#fef2f2";col="#dc2626";bd="#fca5a5";icon="\u274C";}
+  else if(type==="success"){bg="#f0fdf4";col="#15803d";bd="#86efac";icon="\u2705";}
+  else{bg="#fffbeb";col="#92400e";bd="#fbbf24";icon="\uD83D\uDD14";}
+  t.style.background=bg;t.style.color=col;t.style.border="1.5px solid "+bd;
+  t.innerHTML='<span style="font-size:16px">'+icon+'</span><span>'+esc(msg)+'</span>';
   document.body.appendChild(t);
-  setTimeout(function(){t.style.opacity="0";t.style.transition="opacity .3s";setTimeout(function(){t.remove();},300);},2000);
+  requestAnimationFrame(function(){t.style.opacity="1";t.style.transform="translateX(-50%) translateY(0)";});
+  setTimeout(function(){t.style.opacity="0";t.style.transform="translateX(-50%) translateY(-10px)";setTimeout(function(){t.remove();},300);},2200);
 }
+window.skuToast=toast;
 
 // Custom confirm (replaces confirm)
 function customConfirm(msg,onYes){
@@ -178,6 +182,7 @@ function customConfirm(msg,onYes){
   document.getElementById("sku-cf-no").onclick=function(){ov.remove();};
   document.getElementById("sku-cf-yes").onclick=function(){ov.remove();onYes();};
 }
+window.skuConfirm=customConfirm;
 
 // Render picker
 function renderPicker(){
