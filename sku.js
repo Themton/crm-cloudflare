@@ -164,17 +164,22 @@ function toast(msg,type){
 window.skuToast=toast;
 
 // Custom confirm (replaces confirm)
-function customConfirm(msg,onYes){
+function customConfirm(msg,onYes,opts){
+  opts=opts||{};
+  var icon=opts.icon||"\uD83D\uDDD1\uFE0F";
+  var sub=opts.sub!==undefined?opts.sub:"\u0e25\u0e1a\u0e41\u0e25\u0e49\u0e27\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e01\u0e39\u0e49\u0e04\u0e37\u0e19\u0e44\u0e14\u0e49";
+  var yesText=opts.yes||"\u0e25\u0e1a";
+  var yesColor=opts.yesColor||"#ef4444";
   var ov=document.createElement("div");
   ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s";
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:360px;width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center";
-  box.innerHTML='<div style="font-size:32px;margin-bottom:12px">\uD83D\uDDD1\uFE0F</div>'
+  box.innerHTML='<div style="font-size:32px;margin-bottom:12px">'+icon+'</div>'
     +'<div style="font-size:15px;color:#1e293b;font-weight:600;margin-bottom:6px">'+esc(msg)+'</div>'
-    +'<div style="font-size:12px;color:#94a3b8;margin-bottom:20px">\u0e25\u0e1a\u0e41\u0e25\u0e49\u0e27\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e01\u0e39\u0e49\u0e04\u0e37\u0e19\u0e44\u0e14\u0e49</div>'
+    +(sub?'<div style="font-size:12px;color:#94a3b8;margin-bottom:20px">'+esc(sub)+'</div>':'<div style="margin-bottom:20px"></div>')
     +'<div style="display:flex;gap:10px;justify-content:center">'
     +'<button id="sku-cf-no" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>'
-    +'<button id="sku-cf-yes" style="flex:1;padding:10px;border-radius:10px;border:none;background:#ef4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">\u0e25\u0e1a</button>'
+    +'<button id="sku-cf-yes" style="flex:1;padding:10px;border-radius:10px;border:none;background:'+yesColor+';color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">'+esc(yesText)+'</button>'
     +'</div>';
   ov.appendChild(box);
   document.body.appendChild(ov);
