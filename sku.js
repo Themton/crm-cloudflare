@@ -430,6 +430,8 @@ function renderMgr(){
 // Sidebar menu + full-page product view
 var _skuPageActive=false;
 function injectSidebar(){
+  try{var _old=document.getElementById("sku-nav-btn");if(_old)_old.remove();}catch(e){}
+  return; // ปิดเมนู 📦 เก่า — ใช้เมนู 🛒 สินค้า จาก app.bundle แทน
   try{
     // แสดงเมนูสินค้าเฉพาะ admin (หัวหน้า) กับ hr เท่านั้น
     var _user=null;try{_user=JSON.parse(localStorage.getItem("ps_user"));}catch(e){}
