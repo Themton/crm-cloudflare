@@ -929,6 +929,9 @@ function startWatch(){
 
   _ob=new MutationObserver(function(){
     if(_typing)return;
+    // ตรวจว่ามีฟอร์มสร้างออเดอร์เปิดอยู่ไหม — ถ้ามี หยุดทุกอย่าง
+    var formOpen=document.querySelector("textarea[placeholder*='\u0e27\u0e32\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25']")||document.querySelector("input[placeholder*='0xxxxxxxxx']");
+    if(formOpen)return;
     if(_tm)clearTimeout(_tm);_tm=setTimeout(function(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
