@@ -90,6 +90,26 @@ async function loadCat(){
 }
 function rebuildMap(){CMAP={};CAT.forEach(function(p){CMAP[p.sku]=p;});}
 window.skuReloadCatalog=async function(){try{await loadCat();if(typeof renderPicker==="function")renderPicker();}catch(e){console.error("skuReload:",e)}};
+window.skuAllNames=function(){
+  try{
+    if(!CAT||!CAT.length)return[];
+    return CAT.filter(function(p){return p.name&&p.name!=="(หมวดใหม่)"}).map(function(p){return p.name});
+  }catch(e){return[];}
+};
+window.skuCountInRemark=function(remark,name){
+  try{
+    if(!remark||!name)return 0;
+    var txt=String(remark);
+    var idx=txt.indexOf(name);
+    if(idx<0)return 0;
+    var after=txt.slice(idx+name.length,idx+name.length+12);
+    var m=after.match(/^\s*[xX\u00d7*]\s*(\d+)/);
+    if(m)return Number(m[1])||1;
+    var m2=after.match(/^\s*(\d+)\s*(\u0e0a\u0e34\u0e49\u0e19|\u0e15\u0e31\u0e27|\u0e01\u0e25\u0e48\u0e2d\u0e07|\u0e0a\u0e38\u0e14|pcs|pc)/);
+    if(m2)return Number(m2[1])||1;
+    return 1;
+  }catch(e){return 0;}
+};
 window.skuMatchArray=function(remark){
   try{
     if(!remark||!CAT||!CAT.length)return[];
