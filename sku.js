@@ -566,10 +566,10 @@ function renderSkuPage(){
     h+='<div style="margin-top:30px;padding:16px;background:#fff;border-radius:12px;border:1.5px solid #e2e8f0">';
     h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
     h+='<span style="font-size:18px">\uD83D\uDD04</span>';
-    h+='<span style="font-size:15px;font-weight:700;color:#1e293b">\u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 Supabase</span>';
-    h+='<button id="sp-sync-btn" style="margin-left:auto;padding:8px 16px;border-radius:8px;border:none;background:#8b5cf6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">\u0e14\u0e36\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 Supabase</button>';
+    h+='<span style="font-size:15px;font-weight:700;color:#1e293b">\u0e0b\u0e34\u0e07\u0e04\u0e4c\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 \u0e23\u0e30\u0e1a\u0e1a\u0e40\u0e14\u0e34\u0e21</span>';
+    h+='<button id="sp-sync-btn" style="margin-left:auto;padding:8px 16px;border-radius:8px;border:none;background:#8b5cf6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">\u0e14\u0e36\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01 \u0e23\u0e30\u0e1a\u0e1a\u0e40\u0e14\u0e34\u0e21</button>';
     h+='</div>';
-    h+='<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">\u0e14\u0e36\u0e07 orders + parcel_checks + accounts \u0e08\u0e32\u0e01 Supabase \u0e40\u0e14\u0e34\u0e21 \u0e21\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19 Cloudflare D1</div>';
+    h+='<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">\u0e14\u0e36\u0e07 orders + parcel_checks + accounts \u0e08\u0e32\u0e01\u0e23\u0e30\u0e1a\u0e1a\u0e40\u0e14\u0e34\u0e21 \u0e21\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19 Cloudflare D1</div>';
     h+='<div id="sp-sync-result"></div>';
     h+='</div>';
   }
