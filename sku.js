@@ -809,6 +809,9 @@ function enhanceParcelStats(){
       returnCard.appendChild(badge);
     }
 
+    // COD card override DISABLED — React computes COD from parcel data (เซ็นรับแล้ว) already.
+    // Removes the stuck "กำลังโหลด..." + redundant full-orders re-fetch.
+    return;
     // Detect month from table
     var ym="";
     document.querySelectorAll("td").forEach(function(td){
