@@ -916,7 +916,10 @@ function enhanceReturnRate(){
 }
 
 // HR page — add ประจำ/รายวัน filter + hide non-telesale for HR
-var _hrEmpTypes=null,_hrActive={},_hrRole={};
+var _hrEmpTypes=null,_hrActive={},_hrRole={};var _hrTypeFilter=null;
+function _hrFindTable(){var tb=null;document.querySelectorAll("table").forEach(function(t){var th=t.querySelector("th,td");if(th&&(th.textContent||"").indexOf("ชื่อเล่น")>=0)tb=t;});return tb;}
+function _hrApplyFilter(){var table=_hrFindTable();if(!table)return;table.querySelectorAll("tr").forEach(function(tr,i){if(0===i)return;if(null===_hrTypeFilter){tr.style.display="";return;}var nc=tr.querySelector("td"),name=nc?(nc.textContent||"").trim():"",show;show=""===_hrTypeFilter?!_hrEmpTypes[name]&&_hrActive[name]&&"user"===_hrRole[name]:_hrEmpTypes[name]===_hrTypeFilter;tr.style.display=show?"":"none";});}
+function _hrClickDateAll(){var fb=null;document.querySelectorAll("div").forEach(function(d){d.querySelector("button")&&(d.textContent||"").indexOf("วันนี้")>=0&&(d.textContent||"").indexOf("7 วัน")>=0&&!d.querySelector("table")&&(fb=d);});if(!fb)return;var bs=[].slice.call(fb.querySelectorAll("button"));for(var i=0;i<bs.length;i++)if("ทั้งหมด"===bs[i].textContent.trim()&&!bs[i].closest("#hr-type-filter")){bs[i].click();return;}}
 function enhanceHRPage(){
   try{
     // HR access control — hide non-telesale sections on employee page
@@ -956,7 +959,7 @@ function enhanceHRPage(){
     document.querySelectorAll("div").forEach(function(d){
       if(d.querySelector("button")&&(d.textContent||"").indexOf("\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49")>=0&&(d.textContent||"").indexOf("7 \u0e27\u0e31\u0e19")>=0&&!d.querySelector("table"))filterBar=d;
     });
-    if(!filterBar||filterBar.querySelector("#hr-type-filter"))return;
+    if(!filterBar)return;if(filterBar.querySelector("#hr-type-filter")){_hrApplyFilter();return;}
 
     // Load emp_type (once)
     if(!_hrEmpTypes){
@@ -983,7 +986,7 @@ function enhanceHRPage(){
       b.style.cssText="padding:6px 14px;border-radius:8px;border:"+(active?"2px solid #d97706":"1px solid #e2e8f0")+";background:"+(active?"#fef3c7":"#fff")+";color:"+(active?t.c:"#64748b")+";font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
       b.onclick=function(){
         wrap.querySelectorAll("button").forEach(function(bb){bb.style.border="1px solid #e2e8f0";bb.style.background="#fff";bb.style.color="#64748b";});
-        b.style.border="2px solid #d97706";b.style.background="#fef3c7";b.style.color=t.c;
+        b.style.border="2px solid #d97706";b.style.background="#fef3c7";b.style.color=t.c;_hrTypeFilter="all"===t.k?null:t.k;if(""===t.k)_hrClickDateAll();
         // Filter rows
         table.querySelectorAll("tr").forEach(function(tr,i){
           if(i===0)return;
@@ -1053,7 +1056,7 @@ function startWatch(){
     try{if(!document.getElementById("sku-picker")){_pickerEl=null;_origBtnsDiv=null;injectPicker();}
       if(_pickerEl&&!document.body.contains(_pickerEl)){_pickerEl=null;_origBtnsDiv=null;}
       tidyCodesBar();injectSidebar();enhanceParcelStats();injectPrevMonthBtn();enhanceReturnRate();enhanceHRPage();}catch(e){}
-  },400);});
+  },150);});
   _ob.observe(document.body,{childList:true,subtree:true});
 }
 
