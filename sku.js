@@ -916,7 +916,7 @@ function enhanceReturnRate(){
 }
 
 // HR page — add ประจำ/รายวัน filter + hide non-telesale for HR
-var _hrEmpTypes=null,_hrActive={};
+var _hrEmpTypes=null,_hrActive={},_hrRole={};
 function enhanceHRPage(){
   try{
     // HR access control — hide non-telesale sections on employee page
@@ -963,10 +963,10 @@ function enhanceHRPage(){
       _hrEmpTypes={};
       (async function(){
         try{
-          var r=await api("accounts?select=nickname,display_name,emp_type,active");
+          var r=await api("accounts?select=nickname,display_name,emp_type,active,role");
           if(r)r.forEach(function(a){
             var nick=(typeof extractNickname==="function")?extractNickname(a.display_name,a.nickname):(a.nickname||a.display_name||"");
-            if(nick){_hrEmpTypes[nick]=a.emp_type||"";_hrActive[nick]=a.active;}
+            if(nick){_hrEmpTypes[nick]=a.emp_type||"";_hrActive[nick]=a.active;_hrRole[nick]=a.role;}
           });
         }catch(e){}
       })();
@@ -990,7 +990,7 @@ function enhanceHRPage(){
           if(t.k==="all"){tr.style.display="";return;}
           var nameCell=tr.querySelector("td");
           var name=nameCell?(nameCell.textContent||"").trim():"";
-          tr.style.display=(""===t.k?(!_hrEmpTypes[name]&&_hrActive[name]):_hrEmpTypes[name]===t.k)?"":"none";
+          tr.style.display=(""===t.k?(!_hrEmpTypes[name]&&_hrActive[name]&&"user"===_hrRole[name]):_hrEmpTypes[name]===t.k)?"":"none";
         });
       };
       wrap.appendChild(b);
