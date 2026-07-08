@@ -986,15 +986,7 @@ function enhanceHRPage(){
       b.style.cssText="padding:6px 14px;border-radius:8px;border:"+(active?"2px solid #d97706":"1px solid #e2e8f0")+";background:"+(active?"#fef3c7":"#fff")+";color:"+(active?t.c:"#64748b")+";font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
       b.onclick=function(){
         wrap.querySelectorAll("button").forEach(function(bb){bb.style.border="1px solid #e2e8f0";bb.style.background="#fff";bb.style.color="#64748b";});
-        b.style.border="2px solid #d97706";b.style.background="#fef3c7";b.style.color=t.c;_hrTypeFilter="all"===t.k?null:t.k;if(""===t.k)_hrClickDateAll();
-        // Filter rows
-        table.querySelectorAll("tr").forEach(function(tr,i){
-          if(i===0)return;
-          if(t.k==="all"){tr.style.display="";return;}
-          var nameCell=tr.querySelector("td");
-          var name=nameCell?(nameCell.textContent||"").trim():"";
-          tr.style.display=(""===t.k?(!_hrEmpTypes[name]&&_hrActive[name]&&"user"===_hrRole[name]):_hrEmpTypes[name]===t.k)?"":"none";
-        });
+        b.style.border="2px solid #d97706";b.style.background="#fef3c7";b.style.color=t.c;_hrTypeFilter="all"===t.k?null:t.k;if(""===t.k)_hrClickDateAll();_hrApplyFilter();[80,300,700,1300].forEach(function(ms){setTimeout(_hrApplyFilter,ms);});
       };
       wrap.appendChild(b);
     });
