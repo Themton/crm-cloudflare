@@ -167,7 +167,7 @@ var data=useMemo(function(){
   return Object.keys(P).map(function(k){var p=P[k];p.total=p.orderSales+p.upsellSales;p.recv=p.parcels?Math.round(p.delivered/p.parcels*100):0;p.ret=p.parcels?Math.round(p.returned/p.parcels*100):0;p.variants=Object.keys(p._nm).length;return p;});
 },[AO,UO,PC,ACC,r,o]);
 
-var rows=data.filter(function(p){return"all"===etype||("full"===etype&&"รายวัน"!==p.etype)||("day"===etype&&"รายวัน"===p.etype);});
+var rows=data.filter(function(p){return"all"===etype||("full"===etype&&"ประจำ"===p.etype)||("day"===etype&&"รายวัน"===p.etype)||("none"===etype&&"ประจำ"!==p.etype&&"รายวัน"!==p.etype);});
 rows=rows.slice().sort(function(a,b){if("name"===sortK)return sortD*String(a.real).localeCompare(String(b.real),"th");return sortD*((a[sortK]||0)-(b[sortK]||0));});
 var kSales=0,kOrders=0,kUp=0,kParcels=0,kRet=0;rows.forEach(function(p){kSales+=p.total;kOrders+=p.orders;kUp+=p.upsellSales;kParcels+=p.parcels;kRet+=p.returned;});
 var money=function(n){return(Number(n)||0).toLocaleString("en-US");};
@@ -197,7 +197,7 @@ return h("div",{style:{fontFamily:"'Noto Sans Thai',sans-serif",color:C.ink}},
   h("div",{style:{display:"flex",gap:16,flexWrap:"wrap",alignItems:"center",margin:"18px 0 20px"}},
     seg([{v:"today",l:"วันนี้"},{v:"7d",l:"7 วัน"},{v:"14d",l:"14 วัน"},{v:"month",l:"เดือนนี้"},{v:"prev",l:"เดือนก่อน"},{v:"all",l:"ทั้งหมด"}],range,pick,!0),
     h("span",{style:{fontSize:11,fontWeight:700,color:C.faint,textTransform:"uppercase",letterSpacing:".6px"}},"ประเภท"),
-    seg([{v:"all",l:"ทุกประเภท"},{v:"full",l:"ประจำ"},{v:"day",l:"รายวัน"}],etype,setEtype,!1),
+    seg([{v:"all",l:"ทุกประเภท"},{v:"full",l:"ประจำ"},{v:"day",l:"รายวัน"},{v:"none",l:"ไม่ระบุ"}],etype,setEtype,!1),
     loadingAll?h("span",{style:{fontSize:12,color:C.brand,fontWeight:600}},"⏳ กำลังโหลดข้อมูลทั้งหมด..."):null,
     money0?h("button",{onClick:function(){try{hrExportSalesXLSX(AO,UO,"","all"===etype?"":"day"===etype?"รายวัน":"ประจำ",ACC);}catch(e){alert("Export ไม่สำเร็จ: "+e.message);}},style:{marginLeft:"auto",border:0,background:"linear-gradient(135deg,#16a34a,#15803d)",color:"#fff",fontWeight:700,fontSize:13,padding:"9px 16px",borderRadius:10,cursor:"pointer",fontFamily:"'Noto Sans Thai',sans-serif"}},"⬇ Export Excel"):null),
   // KPIs
