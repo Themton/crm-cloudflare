@@ -159,12 +159,12 @@ var data=useMemo(function(){
   function emOfOrd(x){return String(x.AccountEmail||"").toLowerCase().trim()||nm2em[normSP(x.SalesPerson||"")]||"";}
   function emOfPcl(p){return nm2em[normSP(p.telesale||"")]||"";}
   var P={};
-  function ens(em){if(!P[em]){var ac=em2acc[em];P[em]={email:em,hasAcc:!!ac,real:ac?extractRealName(ac.displayName):"",nick:ac?(ac.nickname||(String(ac.displayName||"").match(/\(([^)]+)\)/)||[])[1]||""):"",etype:ac&&ac.empType||"",orders:0,orderSales:0,upsellN:0,upsellSales:0,cod:0,transfer:0,parcels:0,delivered:0,returned:0,returnCOD:0,_nm:{}};}return P[em];}
+  function ens(em){if(!P[em]){var ac=em2acc[em];P[em]={email:em,hasAcc:!!ac,real:ac?extractRealName(ac.displayName):"",nick:ac?(ac.nickname||(String(ac.displayName||"").match(/\(([^)]+)\)/)||[])[1]||""):"",etype:ac&&ac.empType||"",orders:0,orderSales:0,upsellN:0,upsellSales:0,cod:0,transfer:0,parcels:0,delivered:0,returned:0,returnCOD:0,_days:{},_nm:{}};}return P[em];}
   var DELV={"เซ็นรับแล้ว":1,"ลูกค้ารับของ":1},RET={"ส่งคืน":1,"คืนสำเร็จ":1,"คืนต้นทาง":1,"จัดส่งไม่สำเร็จ":1,"ปิดข้อยกเว้น":1,"ตีกลับ":1,"ตีกลับโดยระบบ":1};(ACC||[]).forEach(function(ac){if(ac.active&&"user"===ac.role){var _em=String(ac.username||"").toLowerCase().trim();if(_em)ens(_em);}});
-  (AO||[]).forEach(function(x){var d=getDate(x.Timestamp);if(!d||d<r||d>o)return;var em=emOfOrd(x);if(!em||suspE[em])return;var p=ens(em);p.orders++;var sp=Number(x.SalePrice)||0;p.orderSales+=sp;var c=Number(x.COD)||0;if(c>0)p.cod+=c;else p.transfer+=sp;if(x.SalesPerson)p._nm[String(x.SalesPerson).trim()]=1;});
+  (AO||[]).forEach(function(x){var d=getDate(x.Timestamp);if(!d||d<r||d>o)return;var em=emOfOrd(x);if(!em||suspE[em])return;var p=ens(em);p.orders++;if(d)p._days[d]=1;var sp=Number(x.SalePrice)||0;p.orderSales+=sp;var c=Number(x.COD)||0;if(c>0)p.cod+=c;else p.transfer+=sp;if(x.SalesPerson)p._nm[String(x.SalesPerson).trim()]=1;});
   (UO||[]).forEach(function(x){var d=getDate(x.Timestamp);if(!d||d<r||d>o)return;var em=emOfOrd(x);if(!em||suspE[em])return;var p=ens(em);p.upsellN++;p.upsellSales+=Number(x.SalePrice)||0;if(x.SalesPerson)p._nm[String(x.SalesPerson).trim()]=1;});
   (PC||[]).forEach(function(x){var d=String(x.date||"");if(!d||d<r||d>o)return;var em=emOfPcl(x);if(!em||suspE[em])return;var p=ens(em);p.parcels++;if(DELV[x.flash_status])p.delivered++;if(RET[x.flash_status]){p.returned++;p.returnCOD+=Number(x.cod)||0;}});
-  return Object.keys(P).map(function(k){var p=P[k];p.total=p.orderSales+p.upsellSales;p.recv=p.parcels?Math.round(p.delivered/p.parcels*100):0;p.ret=p.parcels?Math.round(p.returned/p.parcels*100):0;p.variants=Object.keys(p._nm).length;return p;});
+  return Object.keys(P).map(function(k){var p=P[k];p.total=p.orderSales+p.upsellSales;p.recv=p.parcels?Math.round(p.delivered/p.parcels*100):0;p.ret=p.parcels?Math.round(p.returned/p.parcels*100):0;p.variants=Object.keys(p._nm).length;p.workDays=Object.keys(p._days).length;return p;});
 },[AO,UO,PC,ACC,r,o]);
 
 var rows=data.filter(function(p){return"all"===etype||("full"===etype&&"ประจำ"===p.etype)||("day"===etype&&"รายวัน"===p.etype)||("none"===etype&&"ประจำ"!==p.etype&&"รายวัน"!==p.etype);});
@@ -212,7 +212,7 @@ return h("div",{style:{fontFamily:"'Noto Sans Thai',sans-serif",color:C.ink}},
     h("div",{style:{overflowX:"auto"}},
       h("table",{style:{width:"100%",borderCollapse:"collapse"}},
         h("thead",null,h("tr",null,
-          th("#",null),th("พนักงาน","name",!0),th("ออเดอร์","orders"),money0?th("ยอดขาย","orderSales"):null,th("Upsell",money0?"upsellSales":"upsellN"),money0?th("ยอดรวม","total"):null,th("พัสดุ","parcels"),th("% รับ","recv"),th("% ตีกลับ","ret"),th("ประเมิน"))),
+          th("#",null),th("พนักงาน","name",!0),th("ออเดอร์","orders"),th("วันทำงาน","workDays"),money0?th("ยอดขาย","orderSales"):null,th("Upsell",money0?"upsellSales":"upsellN"),money0?th("ยอดรวม","total"):null,th("พัสดุ","parcels"),th("% รับ","recv"),th("% ตีกลับ","ret"),th("ประเมิน"))),
         h("tbody",null, 0===rows.length? h("tr",null,h("td",{colSpan:10,style:{padding:"40px",textAlign:"center",color:C.faint,fontSize:14}},"ไม่มีข้อมูลในช่วงนี้")) :
           rows.map(function(p,i){var rt=rate(p);var medal=medalMode?["🥇","🥈","🥉"][i]:null;
           return h("tr",{key:p.email,style:{borderBottom:"1px solid #f1f5f9"}},
@@ -224,7 +224,7 @@ return h("div",{style:{fontFamily:"'Noto Sans Thai',sans-serif",color:C.ink}},
                 p.variants>1?h("span",{title:"ออเดอร์คนนี้พิมพ์ชื่อ "+p.variants+" แบบ — ยุบรวมด้วยอีเมล",style:{fontSize:10,fontWeight:700,color:C.gold,background:"#fef6e3",border:"1px solid #f4e2b8",padding:"1px 7px",borderRadius:20,cursor:"help"}},"รวม "+p.variants+" ชื่อ"):null,
                 p.hasAcc?null:h("span",{style:{fontSize:10,fontWeight:700,color:C.faint,background:"#f1f5f9",padding:"1px 7px",borderRadius:20}},"ไม่มีบัญชี")),
               h("div",{style:Object.assign({fontSize:"11.5px",color:C.faint,marginTop:2},mono)},p.email)),
-            h("td",{style:Object.assign({padding:"13px 14px",textAlign:"right",fontSize:14},mono)},money(p.orders)),
+            h("td",{style:Object.assign({padding:"13px 14px",textAlign:"right",fontSize:14},mono)},money(p.orders)),h("td",{style:Object.assign({padding:"13px 14px",textAlign:"right",fontSize:14,color:C.sub},mono)},p.workDays?p.workDays+" วัน":"—"),
             money0?h("td",{style:Object.assign({padding:"13px 14px",textAlign:"right",fontSize:14,fontWeight:800,color:C.pos},mono)},"฿"+money(p.orderSales)):null,
             h("td",{style:Object.assign({padding:"13px 14px",textAlign:"right",fontSize:14,color:C.brand,fontWeight:700},mono)},p.upsellN,money0?h("span",{style:{color:C.faint,fontWeight:400}}," · ฿"+money(p.upsellSales)):null),
             money0?h("td",{style:Object.assign({padding:"13px 14px",textAlign:"right",fontSize:14,fontWeight:800},mono)},"฿"+money(p.total)):null,
