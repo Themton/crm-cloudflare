@@ -77,7 +77,7 @@ var data=useMemo(function(){
   function emOfPcl(p){return nm2em[normSP(p.telesale||"")]||"";}
   var P={};
   function ens(em){if(!P[em]){var ac=em2acc[em];P[em]={email:em,hasAcc:!!ac,real:ac?extractRealName(ac.displayName):"",nick:ac?(ac.nickname||(String(ac.displayName||"").match(/\(([^)]+)\)/)||[])[1]||""):"",etype:ac&&ac.empType||"",orders:0,orderSales:0,upsellN:0,upsellSales:0,cod:0,transfer:0,parcels:0,delivered:0,returned:0,returnCOD:0,_nm:{}};}return P[em];}
-  var DELV={"เซ็นรับแล้ว":1,"ลูกค้ารับของ":1},RET={"ส่งคืน":1,"คืนสำเร็จ":1,"คืนต้นทาง":1,"จัดส่งไม่สำเร็จ":1,"ปิดข้อยกเว้น":1,"ตีกลับ":1,"ตีกลับโดยระบบ":1};
+  var DELV={"เซ็นรับแล้ว":1,"ลูกค้ารับของ":1},RET={"ส่งคืน":1,"คืนสำเร็จ":1,"คืนต้นทาง":1,"จัดส่งไม่สำเร็จ":1,"ปิดข้อยกเว้น":1,"ตีกลับ":1,"ตีกลับโดยระบบ":1};(ACC||[]).forEach(function(ac){if(ac.active&&"user"===ac.role){var _em=String(ac.username||"").toLowerCase().trim();if(_em)ens(_em);}});
   (AO||[]).forEach(function(x){var d=getDate(x.Timestamp);if(!d||d<r||d>o)return;var em=emOfOrd(x);if(!em||suspE[em])return;var p=ens(em);p.orders++;var sp=Number(x.SalePrice)||0;p.orderSales+=sp;var c=Number(x.COD)||0;if(c>0)p.cod+=c;else p.transfer+=sp;if(x.SalesPerson)p._nm[String(x.SalesPerson).trim()]=1;});
   (UO||[]).forEach(function(x){var d=getDate(x.Timestamp);if(!d||d<r||d>o)return;var em=emOfOrd(x);if(!em||suspE[em])return;var p=ens(em);p.upsellN++;p.upsellSales+=Number(x.SalePrice)||0;if(x.SalesPerson)p._nm[String(x.SalesPerson).trim()]=1;});
   (PC||[]).forEach(function(x){var d=String(x.date||"");if(!d||d<r||d>o)return;var em=emOfPcl(x);if(!em||suspE[em])return;var p=ens(em);p.parcels++;if(DELV[x.flash_status])p.delivered++;if(RET[x.flash_status]){p.returned++;p.returnCOD+=Number(x.cod)||0;}});
@@ -122,7 +122,7 @@ return h("div",{style:{fontFamily:"'Noto Sans Thai',sans-serif",color:C.ink}},
     kpi("💰 ยอดขายรวม","฿"+money(kSales),C.brand),
     kpi("🧾 ออเดอร์รวม",money(kOrders),"#3b82f6"),
     kpi("🔥 ยอด Upsell","฿"+money(kUp),C.pos),
-    kpi("👥 พนักงานที่มียอด",String(rows.length),"#8b5cf6")),
+    kpi("👥 พนักงานที่มียอด",rows.filter(function(p){return p.total>0;}).length+" / "+rows.length,"#8b5cf6")),
   // table
   h("div",{style:{background:"#fff",border:"1px solid "+C.line,borderRadius:18,overflow:"hidden"}},
     h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 20px",borderBottom:"1px solid "+C.line}},h("h2",{style:{fontSize:15,fontWeight:800}},"สรุปรายคน"),h("span",{style:{fontSize:12,color:C.faint}},"คลิกหัวคอลัมน์เพื่อเรียง · คนระงับถูกตัดออกแล้ว")),
