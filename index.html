@@ -10,7 +10,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ea580c'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Arial,sans-serif' font-weight='900' font-size='14' fill='white'%3EMT%3C/text%3E%3C/svg%3E"/>
 <script>
 // Version check — รอล้าง cache + ถอน service worker ให้เสร็จก่อนค่อย reload (กัน bundle เก่าค้าง)
-var APP_VERSION = "20260703-dash17";
+var APP_VERSION = "20260703-dash18";
 var lastVer = localStorage.getItem("app_ver");
 if(lastVer !== APP_VERSION){
   localStorage.setItem("app_ver", APP_VERSION);
@@ -34,10 +34,10 @@ if(lastVer !== APP_VERSION){
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <!-- ข้อมูลที่อยู่ไทย (โหลดครั้งเดียว — เดิมโหลดซ้ำ 2 ไฟล์) -->
-<script defer src="thai-addr.js?v=20260703-dash17"></script>
+<script defer src="thai-addr.js?v=20260703-dash18"></script>
 <!-- แอปหลัก: pre-compiled แล้ว ไม่ต้องใช้ Babel แปลงใน browser อีก -->
-<script defer src="app-dash.bundle.js?v=20260703-dash17"></script>
-<script defer src="sku.js?v=20260703-dash17"></script>
+<script defer src="app-dash.bundle.js?v=20260703-dash18"></script>
+<script defer src="sku.js?v=20260703-dash18"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans Thai',sans-serif;background:#f0f2f7}
