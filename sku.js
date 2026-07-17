@@ -52,32 +52,7 @@ async function api(path,opts){
   try{var r=await fetch(url,o);if(!r.ok)return null;var ct=r.headers.get("content-type")||"";return ct.indexOf("json")>=0?await r.json():null;}catch(e){return null;}
 }
 
-var DEF=[
-  {sku:"KS50-01",name:"KISO 2(50g)",cat:"KISO 50g"},
-  {sku:"KS50-02",name:"KISO 1(50g) เซรั่ม1 สบู่1",cat:"KISO 50g"},
-  {sku:"KS50-03",name:"KISO 1(50g) เซรั่ม1 เอสเซนส์1 สบู่1",cat:"KISO 50g"},
-  {sku:"KS50-04",name:"KISO 5(50g) สบู่1",cat:"KISO 50g"},
-  {sku:"KS10-01",name:"KISO 2(10g)",cat:"KISO 10g"},
-  {sku:"KS10-02",name:"KISO 3(10g)",cat:"KISO 10g"},
-  {sku:"KS10-03",name:"KISO 4(10g)",cat:"KISO 10g"},
-  {sku:"KS10-04",name:"KISO 5(10g)",cat:"KISO 10g"},
-  {sku:"KS10-05",name:"KISO 6(10g)",cat:"KISO 10g"},
-  {sku:"KS10-06",name:"KISO 7(10g)",cat:"KISO 10g"},
-  {sku:"KS10S-01",name:"KISO 2(10g) เอสเซนส์1 สบู่1",cat:"KISO 10g เซ็ต"},
-  {sku:"KS10S-02",name:"KISO 3(10g) เอสเซนส์1 สบู่1",cat:"KISO 10g เซ็ต"},
-  {sku:"KS10S-03",name:"KISO 5(10g) เอสเซนส์1 สบู่1",cat:"KISO 10g เซ็ต"},
-  {sku:"RN50-01",name:"RONG 1(50g)",cat:"RONG 50g"},
-  {sku:"RN50-02",name:"RONG 2(50g)",cat:"RONG 50g"},
-  {sku:"RN50-03",name:"RONG 3(50g)",cat:"RONG 50g"},
-  {sku:"RN10-01",name:"RONG 2(10g)",cat:"RONG 10g"},
-  {sku:"RN10-02",name:"RONG 3(10g)",cat:"RONG 10g"},
-  {sku:"RN10-03",name:"RONG 5(10g)",cat:"RONG 10g"},
-  {sku:"RN10-04",name:"RONG 7(10g)",cat:"RONG 10g"},
-  {sku:"RN10S-01",name:"RONG 3(10g) เซรั่ม1 สบู่1",cat:"RONG 10g เซ็ต"},
-  {sku:"RN10S-02",name:"RONG 5(10g) เซรั่ม1 สบู่1",cat:"RONG 10g เซ็ต"},
-  {sku:"PRO-01",name:"โปรลองใช้ 10g x2",cat:"โปรแยก"},
-  {sku:"PRO-02",name:"โปรเซ็ตเริ่มต้น",cat:"โปรแยก"}
-];
+// DEF (รายการสินค้าตั้งต้น) ถูกลบออก — สินค้าทั้งหมดมาจาก DB เท่านั้น ไม่มีการเขียนทับด้วยค่าตั้งต้นอีก
 
 var CAT=[],CMAP={},CART={},FILTER="",SEARCH="";
 var _pickerEl=null,_origBtnsDiv=null;
@@ -85,9 +60,9 @@ var _pickerEl=null,_origBtnsDiv=null;
 async function loadCat(){
   try{var r=await api("app_settings?key=eq.sku_catalog&select=value");
     if(r&&r.length>0&&r[0].value){CAT=JSON.parse(r[0].value);}
-    else if(Array.isArray(r)&&r.length===0){CAT=DEF.slice();await saveCat();} // ไม่มีข้อมูลใน DB จริง → ใส่ค่าตั้งต้นครั้งแรก
-    else {CAT=DEF.slice();console.error("โหลดสินค้าไม่สำเร็จ — ใช้ค่าตั้งต้นชั่วคราว (ไม่เขียนทับ DB)");}
-  }catch(e){CAT=DEF.slice();}
+    else if(Array.isArray(r)&&r.length===0){CAT=[];console.warn("ยังไม่มีสินค้าใน DB");}
+    else {CAT=[];console.error("โหลดสินค้าไม่สำเร็จ — ไม่เขียนทับ DB");}
+  }catch(e){CAT=[];console.error("โหลดสินค้าไม่สำเร็จ:",e&&e.message);}
   rebuildMap();
 }
 function rebuildMap(){CMAP={};CAT.forEach(function(p){CMAP[p.sku]=p;});}
