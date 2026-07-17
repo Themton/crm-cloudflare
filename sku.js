@@ -57,12 +57,56 @@ async function api(path,opts){
 var CAT=[],CMAP={},CART={},FILTER="",SEARCH="";
 var _pickerEl=null,_origBtnsDiv=null;
 
+var SKU_CACHE_KEY="sku_catalog_cache";
+function _skuBanner(msg,showRetry){
+  try{
+    var old=document.getElementById("sku-warn");if(old)old.remove();
+    var b=document.createElement("div");b.id="sku-warn";
+    b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:99998;background:#dc2626;color:#fff;padding:9px 14px;font-size:13px;font-weight:700;font-family:sans-serif;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.25)";
+    b.textContent=msg;
+    if(showRetry){
+      var rb=document.createElement("button");rb.textContent="ลองใหม่";
+      rb.style.cssText="margin-left:12px;border:0;background:#fff;color:#dc2626;font-weight:800;font-size:12px;padding:4px 14px;border-radius:8px;cursor:pointer";
+      rb.onclick=function(){b.remove();if(window.skuReloadCatalog)window.skuReloadCatalog();};
+      b.appendChild(rb);
+    }
+    var cb=document.createElement("button");cb.textContent="✕";
+    cb.style.cssText="margin-left:8px;border:0;background:transparent;color:#fff;font-size:14px;cursor:pointer";
+    cb.onclick=function(){b.remove();};
+    b.appendChild(cb);
+    if(document.body)document.body.appendChild(b);
+  }catch(e){}
+}
+function _skuBannerClear(){try{var o=document.getElementById("sku-warn");if(o)o.remove();}catch(e){}}
+
 async function loadCat(){
-  try{var r=await api("app_settings?key=eq.sku_catalog&select=value");
-    if(r&&r.length>0&&r[0].value){CAT=JSON.parse(r[0].value);}
-    else if(Array.isArray(r)&&r.length===0){CAT=[];console.warn("ยังไม่มีสินค้าใน DB");}
-    else {CAT=[];console.error("โหลดสินค้าไม่สำเร็จ — ไม่เขียนทับ DB");}
-  }catch(e){CAT=[];console.error("โหลดสินค้าไม่สำเร็จ:",e&&e.message);}
+  var ok=false;
+  for(var att=0;att<3;att++){
+    try{
+      var r=await api("app_settings?key=eq.sku_catalog&select=value");
+      if(r&&r.length>0&&r[0].value){
+        CAT=JSON.parse(r[0].value);ok=true;
+        try{localStorage.setItem(SKU_CACHE_KEY,r[0].value);}catch(_e){}
+        _skuBannerClear();
+        break;
+      }
+      if(Array.isArray(r)&&r.length===0){CAT=[];ok=true;console.warn("ยังไม่มีสินค้าใน DB");_skuBannerClear();break;}
+    }catch(e){}
+    if(att<2)await new Promise(function(res){setTimeout(res,700*(att+1));});
+  }
+  if(!ok){
+    var c=null;try{c=localStorage.getItem(SKU_CACHE_KEY);}catch(_e){}
+    if(c){
+      try{CAT=JSON.parse(c);
+        console.warn("โหลดสินค้าไม่สำเร็จ — ใช้ข้อมูลที่บันทึกไว้ในเครื่อง (ไม่เขียนทับ DB)");
+        _skuBanner("⚠️ โหลดสินค้าไม่สำเร็จ — กำลังใช้รายการล่าสุดที่บันทึกไว้",true);
+      }catch(_e){CAT=[];_skuBanner("⚠️ โหลดสินค้าไม่สำเร็จ",true);}
+    }else{
+      CAT=[];
+      console.error("โหลดสินค้าไม่สำเร็จ — ไม่เขียนทับ DB");
+      _skuBanner("⚠️ โหลดสินค้าไม่สำเร็จ — กรุณาลองใหม่",true);
+    }
+  }
   rebuildMap();
 }
 function rebuildMap(){CMAP={};CAT.forEach(function(p){CMAP[p.sku]=p;});}
@@ -118,6 +162,16 @@ window.skuListAll=function(){
 };
 async function saveCat(){
   var v=JSON.stringify(CAT);
+  // สำรองของเดิมไว้ก่อน (กู้ย้อนได้ทันทีถ้าเซฟผิด)
+  try{
+    var cur=await api("app_settings?key=eq.sku_catalog&select=value");
+    if(cur&&cur[0]&&cur[0].value&&cur[0].value!==v){
+      var pv=cur[0].value;
+      var rp=await api("app_settings?key=eq.sku_catalog_prev",{method:"PATCH",body:{value:pv,updated_at:new Date().toISOString()}});
+      if(rp===null)await api("app_settings",{method:"POST",body:{key:"sku_catalog_prev",value:pv,updated_at:new Date().toISOString()}});
+    }
+  }catch(_e){}
+  try{localStorage.setItem(SKU_CACHE_KEY,v);}catch(_e){}
   var r=await api("app_settings?key=eq.sku_catalog",{method:"PATCH",body:{value:v,updated_at:new Date().toISOString()}});
   if(r===null)await api("app_settings",{method:"POST",body:{key:"sku_catalog",value:v,updated_at:new Date().toISOString()}});
   rebuildMap();
