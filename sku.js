@@ -84,7 +84,9 @@ var _pickerEl=null,_origBtnsDiv=null;
 
 async function loadCat(){
   try{var r=await api("app_settings?key=eq.sku_catalog&select=value");
-    if(r&&r.length>0&&r[0].value){CAT=JSON.parse(r[0].value);}else{CAT=DEF.slice();await saveCat();}
+    if(r&&r.length>0&&r[0].value){CAT=JSON.parse(r[0].value);}
+    else if(Array.isArray(r)&&r.length===0){CAT=DEF.slice();await saveCat();} // ไม่มีข้อมูลใน DB จริง → ใส่ค่าตั้งต้นครั้งแรก
+    else {CAT=DEF.slice();console.error("โหลดสินค้าไม่สำเร็จ — ใช้ค่าตั้งต้นชั่วคราว (ไม่เขียนทับ DB)");}
   }catch(e){CAT=DEF.slice();}
   rebuildMap();
 }
