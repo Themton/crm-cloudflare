@@ -62,8 +62,8 @@ var mono={fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nu
 var money=function(n){return(Number(n)||0).toLocaleString("en-US");};
 
 var rows=useMemo(function(){
-  var suspE={},em2acc={},nm2em={},nkC={};
-  (ACC||[]).forEach(function(ac){var em=String(ac.username||"").toLowerCase().trim();if(em){em2acc[em]=ac;if(!ac.active)suspE[em]=1;}});
+  var suspE={},em2acc={},nm2em={},nkC={},__actE={};
+  (ACC||[]).forEach(function(ac){var em=String(ac.username||"").toLowerCase().trim();if(em){if(ac.active||!em2acc[em])em2acc[em]=ac;if(ac.active)__actE[em]=1;else suspE[em]=1;}});Object.keys(__actE).forEach(function(k){delete suspE[k];});
   (AO||[]).forEach(function(x){var n=normSP(x.SalesPerson||""),e=String(x.AccountEmail||"").toLowerCase().trim();if(n&&e&&!nm2em[n])nm2em[n]=e;});
   (ACC||[]).forEach(function(ac){[normSP(ac.nickname),normSP(extractNickname(ac.displayName,ac.nickname)),normSP(String(ac.displayName||"").split("(")[0])].forEach(function(k){if(k)nkC[k]=(nkC[k]||0)+1;});});
   (ACC||[]).forEach(function(ac){var em=String(ac.username||"").toLowerCase().trim();if(!em)return;[normSP(ac.nickname),normSP(extractNickname(ac.displayName,ac.nickname)),normSP(String(ac.displayName||"").split("(")[0])].forEach(function(k){if(k&&1===nkC[k]&&!nm2em[k])nm2em[k]=em;});});
@@ -153,8 +153,8 @@ function pick(rg){ if(("all"===rg||"prev"===rg)&&onLoadAll){setLoadingAll(!0);Pr
 function sortBy(k){ if(sortK===k)setSortD(-sortD); else {setSortK(k);setSortD("name"===k?1:-1);} }
 
 var data=useMemo(function(){
-  var suspE={},em2acc={},nm2em={},nkC={};
-  (ACC||[]).forEach(function(ac){var em=String(ac.username||"").toLowerCase().trim();if(em){em2acc[em]=ac;if(!ac.active)suspE[em]=1;}});
+  var suspE={},em2acc={},nm2em={},nkC={},__actE={};
+  (ACC||[]).forEach(function(ac){var em=String(ac.username||"").toLowerCase().trim();if(em){if(ac.active||!em2acc[em])em2acc[em]=ac;if(ac.active)__actE[em]=1;else suspE[em]=1;}});Object.keys(__actE).forEach(function(k){delete suspE[k];});
   (AO||[]).forEach(function(x){var n=normSP(x.SalesPerson||""),e=String(x.AccountEmail||"").toLowerCase().trim();if(n&&e&&!nm2em[n])nm2em[n]=e;});
   (ACC||[]).forEach(function(ac){[normSP(ac.nickname),normSP(extractNickname(ac.displayName,ac.nickname)),normSP(String(ac.displayName||"").split("(")[0])].forEach(function(k){if(k)nkC[k]=(nkC[k]||0)+1;});});
   (ACC||[]).forEach(function(ac){var em=String(ac.username||"").toLowerCase().trim();if(!em)return;[normSP(ac.nickname),normSP(extractNickname(ac.displayName,ac.nickname)),normSP(String(ac.displayName||"").split("(")[0])].forEach(function(k){if(k&&1===nkC[k]&&!nm2em[k])nm2em[k]=em;});});
