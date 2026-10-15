@@ -15,14 +15,13 @@ var MTJT = {
  async guardTracking(number){return (await this.call('guard',{trackingNo:number})).reserved;}
 };
 function ShippingPage(props) {
- var h=React.createElement, state=React.useState('flash'),carrier=state[0],setCarrier=state[1];
- return h('div',null,
-  h('div',{style:{display:'flex',gap:8,marginBottom:16}},
-   ['flash','jnt'].map(function(c){return h('button',{key:c,onClick:function(){setCarrier(c);},style:{padding:'12px 24px',border:'1px solid #ddd',borderRadius:10,background:carrier===c?(c==='jnt'?'#c91c29':'#f59e0b'):'#fff',color:carrier===c?'white':'#334155',fontWeight:700,cursor:'pointer'}},c==='jnt'?'J&T Express':'Flash Express');})),
-  carrier==='jnt'?h(JtShippingPanel,props):h(FlashShippingPage,Object.assign({},props,{
-   orders:(props.orders||[]).filter(function(o){return o.Carrier!=='jnt';}),
-   upsellOrders:(props.upsellOrders||[]).filter(function(o){return o.Carrier!=='jnt';})
-  })));
+ var h=React.createElement,carrier=props.carrier==='jnt'?'jnt':'flash';
+ var filtered=Object.assign({},props,{
+  orders:(props.orders||[]).filter(function(o){return carrier==='jnt'?o.Carrier==='jnt':o.Carrier!=='jnt';}),
+  upsellOrders:(props.upsellOrders||[]).filter(function(o){return carrier==='jnt'?o.Carrier==='jnt':o.Carrier!=='jnt';})
+ });
+ return carrier==='jnt'?h(JtShippingPanel,filtered):h('div',null,
+  h('h2',{style:{color:'#b45309',margin:'0 0 16px'}},'จัดส่ง Flash Express'),h(FlashShippingPage,filtered));
 }
 function JtShippingPanel(props) {
  var h=React.createElement;
