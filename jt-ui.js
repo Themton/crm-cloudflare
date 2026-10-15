@@ -48,7 +48,7 @@ function JtShippingPanel(props) {
  var all=(props.orders||[]).map(function(o){return Object.assign({},o,{_table:'orders'});}).concat((props.upsellOrders||[]).map(function(o){return Object.assign({},o,{_table:'upsell'});}));
  var reserved=new Set(rows.map(function(r){return r.order_table+':'+r.order_id;}));
  var matches=function(o){return !query||[o.OrderID,o.Name,o.MobileNo,o.TrackingNo].join(' ').toLowerCase().includes(query.toLowerCase());};
- var pending=all.filter(function(o){return o.Status==='รอส่ง'&&!o.TrackingNo&&o.Carrier!=='jnt'&&!reserved.has(o._table+':'+o.OrderID)&&matches(o);});
+ var pending=all.filter(function(o){return o.Status==='รอส่ง'&&!o.TrackingNo&&o.Carrier==='jnt'&&!reserved.has(o._table+':'+o.OrderID)&&matches(o);});
  var known={};all.forEach(function(o){known[o._table+':'+o.OrderID]=o;});
  var visible=rows.filter(function(r){var o=known[r.order_table+':'+r.order_id];return !query||[r.order_id,r.bill_code,r.customer_code,o&&o.Name,o&&o.MobileNo].join(' ').toLowerCase().includes(query.toLowerCase());});
  function action(label,fn,disabled){return h('button',{style:btn,disabled:busy||disabled,onClick:function(){run(fn);}},label);}
