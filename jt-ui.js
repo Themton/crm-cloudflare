@@ -66,7 +66,7 @@ function JtShippingPanel(props){
  function button(label,fn,disabled,color){return h('button',{type:'button',style:Object.assign({},btn,color?{color:color,borderColor:color,background:'#fff'}:{}),disabled:busy||disabled,onClick:fn},label);}
  function act(label,fn,disabled,color){return button(label,function(){run(fn);},disabled,color);}
  function ref(o){return {table:o._table,orderId:o.OrderID};}
- function ask(type,list){setReason('');setConfirm({type:type,items:list.slice()});}
+ function ask(type,list){setConfirm({type:type,items:list.slice()});}
  async function batch(type,list){var out=[],merged=(type==='label'||type==='official-label')?await PDFLib.PDFDocument.create():null;
   setResults([]);setProgress({done:0,total:list.length});
   for(var i=0;i<list.length;i++){var o=list[i];try{
