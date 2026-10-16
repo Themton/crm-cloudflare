@@ -1,6 +1,7 @@
 /* J&T CRM panel. No carrier secrets are stored in the browser. */
 var MTJT = {
  session: '',
+ restore:function(email){try{var r=JSON.parse(localStorage.getItem('ps_session')||'null');if(r&&r.user.email===email){this.session=r.session;this.user=email;return true;}}catch(_){}this.session='';this.user='';return false;},
  async call(action, body, pdf) {
   var res = await fetch(SUPABASE_URL.replace(/\/$/,'')+'/jt-api/'+action,{
    method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-jt-session':this.session},
@@ -8,7 +9,7 @@ var MTJT = {
   });
   if(pdf && res.ok && (res.headers.get('Content-Type')||'').includes('application/pdf'))return res.blob();
   var data=await res.json();
-  if(!res.ok){if(res.status===401)this.session='';throw new Error(data.error||data.msg||'J&T ทำรายการไม่สำเร็จ');}
+  if(!res.ok){if(res.status===401){this.session='';localStorage.removeItem('ps_session');}throw new Error(data.error||data.msg||'J&T ทำรายการไม่สำเร็จ');}
   return data;
  },
  async guard(order){return (await this.call('guard',{table:order._table||'orders',orderId:order.OrderID})).reserved;},
@@ -16,6 +17,7 @@ var MTJT = {
 };
 function ShippingPage(props) {
  var account=null;try{account=JSON.parse(localStorage.getItem('ps_user')||'null');}catch(_){}
+ MTJT.restore(account&&account.username||'');
  props=Object.assign({},props,{currentUser:account&&account.username||''});
  var h=React.createElement,carrier=props.carrier==='jnt'?'jnt':'flash';
  var filtered=Object.assign({},props,{
@@ -80,7 +82,7 @@ function JtShippingPanel(props){
  function exportCSV(){var list=picked.length?picked:filtered;var cells=[['ที่มา','วันที่','ออเดอร์','ลูกค้า','เบอร์โทร','ราคา','COD','เลขพัสดุ','สถานะ','สถานะ J&T','รายละเอียดล่าสุด','พนักงาน','สินค้า']].concat(list.map(function(o){return[o._table,o.Timestamp,o.OrderID,o.Name,o.MobileNo,o.SalePrice,o.COD,o.TrackingNo,(stages.find(function(s){return s[0]===jtStage(o);})||[])[1],o.FlashStatus,o.FlashDetail,o.SalesPerson,o.Remark];}));var csv='\ufeff'+cells.map(function(row){return row.map(function(v){var s=String(v==null?'':v);if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');download(new Blob([csv],{type:'text/csv;charset=utf-8'}),'jnt-orders.csv');}
  function modal(title,content,onClose){return h('div',{role:'dialog','aria-label':title,style:{position:'fixed',inset:0,zIndex:9999,background:'rgba(15,23,42,.5)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}},h('div',{style:{background:'#fff',padding:24,borderRadius:14,width:'95%',maxWidth:1000,maxHeight:'90vh',overflow:'auto'}},h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:16}},h('h3',null,title),button('ปิด',onClose,busy)),content));}
  var title=h('h2',{style:{color:'#b91c1c',fontSize:20,margin:'0 0 14px'}},'จัดส่ง J&T Express');
- if(!logged)return h('section',{style:box},title,h('p',{style:{marginBottom:12}},'ยืนยันบัญชี CRM ของคุณเพื่อจัดส่ง J&T'),message&&h('p',{role:'status'},message),h('form',{style:{display:'grid',gap:10,maxWidth:400},onSubmit:function(e){e.preventDefault();run(async function(){if(props.currentUser&&email!==props.currentUser)throw new Error('กรุณาใช้บัญชีเดียวกับที่เข้า CRM');var r=await MTJT.call('login',{email:email,password:password});MTJT.session=r.session;MTJT.user=r.user.email;setPassword('');setLogged(true);});}},h('input',{'aria-label':'บัญชี CRM',style:inp,value:email,readOnly:!!props.currentUser,autoComplete:'username',onChange:function(e){setEmail(e.target.value);}}),h('input',{'aria-label':'รหัสผ่าน CRM',style:inp,type:'password',value:password,autoComplete:'current-password',onChange:function(e){setPassword(e.target.value);}}),h('button',{style:btn,disabled:busy},'เข้าสู่ระบบ J&T')));
+ if(!logged)return h('section',{style:box},title,h('p',null,'กรุณาเข้าสู่ CRM อีกครั้งเพื่อเริ่มใช้การเข้าสู่ระบบครั้งเดียว จากนั้นเปิด J&T ได้ทันที'),h('button',{style:btn,onClick:function(){localStorage.removeItem('ps_session');localStorage.removeItem('ps_user');location.reload();}},'กลับไปเข้าสู่ CRM'));
  return h('div',null,title,
  h('div',{style:Object.assign({},box,{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'})},
  button('☑ เลือกทั้งหมด',function(){toggle(filtered);},!filtered.length),
@@ -94,7 +96,7 @@ function JtShippingPanel(props){
  h('select',{'aria-label':'ประเภทออเดอร์',style:inp,value:source,onChange:function(e){setSource(e.target.value);}},h('option',{value:'ALL'},'ทั้งหมด'),h('option',{value:'orders'},'📋 Order'),h('option',{value:'upsell'},'🔥 Upsell')),
  h('input',{'aria-label':'ค้นหา',style:inp,placeholder:'🔍 ค้นหา...',value:query,onChange:function(e){setQuery(e.target.value);}}),
  h('input',{'aria-label':'ค้นหาเบอร์โทร',style:inp,placeholder:'📱 ค้นหาเลขพัสดุจากเบอร์...',value:phone,onChange:function(e){setPhone(e.target.value.replace(/[^0-9]/g,''));}}),
- act('🔄 ซิงค์ J&T',function(){return batch('tracking',trackable);},!trackable.length,'#2563eb'),act('โหลดข้อมูลใหม่',reload),act('ออกจาก J&T',async function(){MTJT.session='';MTJT.user='';setLogged(false);setRows([]);setConfig(null);})),
+ act('🔄 ซิงค์ J&T',function(){return batch('tracking',trackable);},!trackable.length,'#2563eb'),act('โหลดข้อมูลใหม่',reload)),
  h('div',{style:Object.assign({},box,{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'})},h('strong',null,shop?'ร้าน: '+shop.name:'⚠️ ยังไม่ได้ตั้งค่าร้านเริ่มต้น'),shop&&h('span',{style:{fontSize:12,color:'#64748b'}},shop.customerCode+' · '+shop.sender.sender_name),h('label',null,'น้ำหนัก (กก.) ',h('input',{type:'number',min:0.001,max:100,step:0.001,style:Object.assign({},inp,{width:90}),value:weight,disabled:busy,onChange:function(e){setWeight(e.target.value);}})),h('label',null,'ตั้งแต่ ',h('input',{type:'date',style:inp,value:dateFrom,onChange:function(e){setDateFrom(e.target.value);}})),h('label',null,'ถึง ',h('input',{type:'date',style:inp,value:dateTo,onChange:function(e){setDateTo(e.target.value);}})),canManage&&h('details',{style:{width:'100%'}},h('summary',{style:{cursor:'pointer',fontWeight:600}},'⚙️ ตั้งค่าร้าน (เฉพาะแอดมิน)'),h(JtShopSettings,{config:config,onSaved:reload}))),
  message&&h('div',{role:'status',style:Object.assign({},box,{color:'#9a3412',background:'#fff7ed'})},message),
  progress&&h('div',{role:'status',style:box},'กำลังทำรายการ '+progress.done+' / '+progress.total,h('progress',{value:progress.done,max:progress.total,style:{width:'100%'}})),
