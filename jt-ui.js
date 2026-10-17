@@ -210,7 +210,7 @@ async function jtSaveReceiver(o,fields){
  var keys=['name','mobile_no','address','sub_district','district','province','zip','remark'],body={};keys.forEach(function(k){body[k]=String(fields[k]||'').trim();});body.mobile_no=body.mobile_no.replace(/[\s-]/g,'');
  if(keys.slice(0,7).some(function(k){return !body[k];})||!/^\d{9,15}$/.test(body.mobile_no)||!/^\d{5}$/.test(body.zip))throw Error('กรุณากรอกข้อมูลผู้รับให้ครบ ตรวจสอบเบอร์โทรและรหัสไปรษณีย์');
  var query=o._table+'?order_id=eq.'+encodeURIComponent(o.OrderID),current=(await sbFetch(query))[0];
- var ledger=(await sbFetch('jt_shipments?order_table=eq.'+o._table+'&order_id=eq.'+encodeURIComponent(o.OrderID)))[0];
+ var ledger=null,offset=0;for(;;){var batch=await MTJT.call('list',{offset:offset});ledger=batch.rows.find(function(r){return r.order_table===o._table&&r.order_id===o.OrderID;});if(ledger||batch.rows.length<200)break;offset+=200;}
  if(!current||current.carrier!=='jnt'||current.tracking_no||current.jt_tracking_no||!['pending','รอส่ง'].includes(current.status)||(ledger&&(ledger.state!=='unknown'||ledger.bill_code||ledger.deleted_at)))throw Error('รายการมีการเปลี่ยนแปลงหรือมีเลขพัสดุแล้ว กรุณาโหลดข้อมูลใหม่');
  var filters='&carrier=eq.jnt&status=eq.'+encodeURIComponent(current.status);
  for(var k of ['tracking_no','jt_tracking_no'])filters+='&'+k+(current[k]==null?'=is.null':'=eq.');
