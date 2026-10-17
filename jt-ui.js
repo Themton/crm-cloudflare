@@ -52,7 +52,7 @@ function JtShippingPanel(props){
  var box={background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,padding:'10px 14px',marginBottom:10};
  var stages=[['ALL','ทั้งหมด','#475569'],['pending','📦 เตรียมส่ง','#d97706'],['created','🔖 สร้างเลขแล้ว','#0369a1'],['printed','🖨️ ปริ้นแล้ว','#059669'],['cancelled','🚫 ยกเลิก','#dc2626'],['review','⚠️ ต้องตรวจสอบ','#b45309'],['deleted','🗑 ลบแล้ว','#64748b']];
  var scans=[['ALL','📋 ทั้งหมด'],['waiting','⏳ รอ J&T รับ'],['received','📦 รับพัสดุแล้ว'],['transit','🚛 กำลังขนส่ง'],['delivery','🚚 การนำจ่าย'],['delivered','✅ เซ็นรับแล้ว'],['problem','⚠️ พัสดุมีปัญหา'],['returned','↩️ ส่งคืน']];
- async function load(){var cfg=await MTJT.call('shops');setConfig(cfg);if(!config||config.revision!==cfg.revision){var sh=cfg.shops.find(function(s){return s.id===cfg.defaultShopId;});if(sh)setWeight(String(sh.weight));}var collected=[],offset=0;for(;;){var r=await MTJT.call('list',{offset:offset});collected=collected.concat(r.rows);if(r.rows.length<200)break;offset+=200;}setRows(collected);setLoaded(true);}
+ async function load(){var cfg=await MTJT.call('shops');setConfig(cfg);if(!config||config.revision!==cfg.revision){var sh=cfg.shops.find(function(s){return s.id===cfg.defaultShopId;});if(sh)setWeight(String(sh.weight));}var collected=[],offset=0;for(;;){var r=await MTJT.call('list',{offset:offset});collected=collected.concat(r.rows);if(r.rows.length<200)break;offset+=200;}setRows(collected);setLoaded(true);window.dispatchEvent(new CustomEvent('mt-jt-pickup-update',{detail:{user:props.currentUser,rows:collected}}));}
  async function run(fn){if(busyRef.current)return;busyRef.current=true;setBusy(true);setMessage('');try{await fn();}catch(e){setMessage(jtThaiReason(e.message));if(!MTJT.session)setLogged(false);}finally{busyRef.current=false;setBusy(false);}}
  async function reload(){await load();if(props.onRefresh)await props.onRefresh();}
  React.useEffect(function(){if(props.currentUser&&MTJT.user!==props.currentUser){MTJT.session='';MTJT.user='';setLogged(false);}if(logged)run(load);},[logged,props.currentUser]);
@@ -212,4 +212,24 @@ async function jtSaveReceiver(o,fields){
  var checked=crmValidatedOrder({SubDistrict:body.sub_district,District:body.district,Province:body.province,ZIP:body.zip});body.sub_district=checked.SubDistrict;body.district=checked.District;body.province=checked.Province;body.zip=checked.ZIP;
  var result=await MTJT.call('edit-and-prepare',{table:o._table,orderId:o.OrderID,fields:body});
  if(!result.ok||result.stage!=='pending')throw Error('ยังยืนยันการย้ายกลับเตรียมส่งไม่ได้ กรุณาโหลดข้อมูลใหม่');
+}
+
+function jtPickupCount(rows){var seen=new Set();return(rows||[]).filter(function(r){var key=r.order_table+':'+r.order_id;if(seen.has(key))return false;seen.add(key);return jtAwaitingPickup({TrackingNo:r.bill_code,_jt:r});}).length;}
+function ShippingPickupBadge(props){
+ var h=React.createElement,carrier=props.carrier,user=props.user||'',state=React.useState(null),count=state[0],setCount=state[1];
+ React.useEffect(function(){
+  if(carrier!=='jnt')return;
+  var active=true,busy=false;setCount(null);
+  async function refresh(){if(busy)return;busy=true;try{
+   if(!MTJT.restore(user))throw Error('session');
+   var rows=[],offset=0;for(;;){var result=await MTJT.call('list',{offset:offset});rows=rows.concat(result.rows);if(result.rows.length<200)break;offset+=200;}
+   if(active)setCount(jtPickupCount(rows));
+  }catch(e){if(active)setCount(null);}finally{busy=false;}}
+  function update(e){if(e.detail&&e.detail.user===user)setCount(jtPickupCount(e.detail.rows));}
+  window.addEventListener('mt-jt-pickup-update',update);window.addEventListener('focus',refresh);refresh();var timer=setInterval(refresh,300000);
+  return function(){active=false;clearInterval(timer);window.removeEventListener('mt-jt-pickup-update',update);window.removeEventListener('focus',refresh);};
+ },[carrier,user]);
+ var n=carrier==='flash'?(props.orders||[]).concat(props.upsellOrders||[]).filter(function(o){return o.Carrier!=='jnt'&&shippingAwaitingPickup(o);}).length:count;
+ var label=n===null?'กำลังตรวจจำนวนพัสดุที่ยังไม่เข้ารับ':'ยังไม่เข้ารับ '+n+' ชิ้น';
+ return h('span',{'aria-label':label,title:label,style:{marginLeft:'auto',display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:23,padding:'2px 7px',borderRadius:999,background:n>0?'#dc2626':'#475569',color:'#fff',fontSize:12,fontWeight:800,lineHeight:'18px',flexShrink:0}},n===null?'…':n.toLocaleString());
 }
