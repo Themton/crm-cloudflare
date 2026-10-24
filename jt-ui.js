@@ -32,6 +32,7 @@ function jtRetryable(o){return !!o._jt&&o._jt.state==='unknown'&&!o._jt.bill_cod
 function jtEditable(o){return !o.TrackingNo&&['pending','รอส่ง'].includes(o.Status)&&(!o._jt||(['unknown','ready'].includes(o._jt.state)&&!o._jt.bill_code&&!o._jt.deleted_at));}
 function jtAwaitingPickup(o){return !!o.TrackingNo&&!!o._jt&&o._jt.state==='created'&&!o._jt.deleted_at&&['','สร้างรายการ','รอเข้ารับ','ยังไม่พบการเข้ารับ'].includes(String(o._jt.carrier_status||o.FlashStatus||'').trim());}
 function jtRowKey(o){return o._table+':'+o.OrderID;}
+function jtUnbooked(o){return !o.TrackingNo&&['รอส่ง','pending','ยกเลิก'].includes(o.Status)&&(!o._jt||(o._jt.state==='ready'&&!o._jt.bill_code&&!o._jt.deleted_at));}
 function jtStage(o){var r=o._jt;if(r){if(r.deleted_at)return 'deleted';if(r.state==='cancelled')return 'cancelled';if(r.state==='ready'&&!r.bill_code)return 'pending';if(r.state!=='created')return 'review';return r.printed_at?'printed':'created';}return o.Status==='ยกเลิก'?'cancelled':'pending';}
 function jtScanGroup(o){var s=(o._jt&&o._jt.carrier_status)||o.FlashStatus||'';if(/ตีกลับ|ส่งคืน|คืนสำเร็จ/.test(s))return 'returned';if(/เซ็นรับ|ลูกค้ารับ|Delivered/.test(s))return 'delivered';if(/ปัญหา|ติดต่อไม่ได้|ไม่สำเร็จ|ระงับ/.test(s))return 'problem';if(/นำจ่าย|กำลังจัดส่ง/.test(s))return 'delivery';if(/ขนส่ง|เข้าคลัง/.test(s))return 'transit';if(/รับพัสดุ|Picked Up/.test(s))return 'received';return 'waiting';}
 function jtOrderDate(value){
@@ -106,8 +107,8 @@ function JtShippingPanel(props){
  button('📋 รายการยังไม่พิมพ์',function(){setStage('created');setScan('ALL');}),
  button('🖨️ พิมพ์ใบปะหน้า ('+printable.length+')',function(){run(function(){return batch('label',printable);});},!printable.length,'#0284c7'),
  canWrite&&button('✓ ปริ้นแล้ว',function(){ask('printed',printable);},!printable.length,'#059669'),
- canWrite&&button('🗑 ยกเลิกพัสดุ',function(){ask('cancel',picked.filter(function(o){return o._jt&&!o._jt.deleted_at&&o._jt.state!=='cancelled';}));},!picked.some(function(o){return o._jt&&!o._jt.deleted_at&&o._jt.state!=='cancelled';}),'#dc2626'),
- canWrite&&button('🗑 ลบรายการ',function(){ask('delete',picked.filter(function(o){return o._jt&&o._jt.state==='cancelled'&&!o._jt.deleted_at;}));},!picked.some(function(o){return o._jt&&o._jt.state==='cancelled'&&!o._jt.deleted_at;}),'#dc2626'),
+ canWrite&&button('🗑 ยกเลิกพัสดุ',function(){ask('cancel',picked.filter(function(o){return jtUnbooked(o)||o._jt&&!o._jt.deleted_at&&o._jt.state!=='cancelled';}));},!picked.some(function(o){return jtUnbooked(o)||o._jt&&!o._jt.deleted_at&&o._jt.state!=='cancelled';}),'#dc2626'),
+ canWrite&&button('🗑 ลบรายการ',function(){ask('delete',picked.filter(function(o){return jtUnbooked(o)||o._jt&&o._jt.state==='cancelled'&&!o._jt.deleted_at;}));},!picked.some(function(o){return jtUnbooked(o)||o._jt&&o._jt.state==='cancelled'&&!o._jt.deleted_at;}),'#dc2626'),
  canWrite&&stage==='deleted'&&button('คืนรายการ',function(){ask('restore',picked);},!picked.length),
  button('✕ ล้างที่เลือก',function(){setSelected({});},!picked.length),
  h('select',{'aria-label':'โหลดข้อมูลอัตโนมัติ',style:inp,value:auto,onChange:function(e){setAuto(e.target.value);}},['0','1','3','5','10','30'].map(function(v){return h('option',{key:v,value:v},v==='0'?'ปิด Auto':'โหลดข้อมูลทุก '+v+' นาที');})),
