@@ -10,7 +10,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ea580c'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Arial,sans-serif' font-weight='900' font-size='14' fill='white'%3EMT%3C/text%3E%3C/svg%3E"/>
 <script>
 // Version check — รอล้าง cache + ถอน service worker ให้เสร็จก่อนค่อย reload (กัน bundle เก่าค้าง)
-var APP_VERSION = "20261025-cf-usage1";
+var APP_VERSION = "20261025-force-update1";
 var lastVer = localStorage.getItem("app_ver");
 if(lastVer !== APP_VERSION){
   localStorage.setItem("app_ver", APP_VERSION);
@@ -25,6 +25,38 @@ if(lastVer !== APP_VERSION){
   }
 }
 </script>
+<script>
+// บังคับอัปเดต — เช็คเวอร์ชันบนเซิร์ฟเวอร์ทุก 3 นาที + ทุกครั้งที่กลับมาที่แท็บ/เปิดเครื่อง/เน็ตกลับมา
+// เจอเวอร์ชันใหม่ → แถบแดงนับถอยหลัง 30 วิ แล้วรีเฟรชเอง (ถ้ากำลังพิมพ์อยู่ รอให้เสร็จ สูงสุด 5 นาที)
+(function(){
+  var found=false,lastChk=0;
+  function busy(){var a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&String(a.value||"").length>0);}
+  function check(){
+    if(found||Date.now()-lastChk<2e4)return;lastChk=Date.now();
+    fetch(location.pathname+"?vchk="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():""}).then(function(t){
+      var m=t&&t.match(/var APP_VERSION = "([^"]+)"/);
+      if(m&&m[1]&&m[1]!==APP_VERSION){found=true;countdown();}
+    }).catch(function(){});
+  }
+  function countdown(){
+    var start=Date.now(),left=30,bar=document.createElement("div");
+    bar.style.cssText="position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#dc2626;color:#fff;padding:10px 16px;font:700 14px 'Noto Sans Thai',sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.25)";
+    (document.body||document.documentElement).appendChild(bar);
+    (function tick(){
+      var wait=busy()&&Date.now()-start<3e5;
+      if(left<=0&&!wait){bar.textContent="🔄 กำลังอัปเดตระบบ...";location.reload();return;}
+      bar.textContent=left>0?"🔄 มีระบบเวอร์ชันใหม่ — จะรีเฟรชอัตโนมัติใน "+left+" วินาที":"🔄 มีระบบเวอร์ชันใหม่ — กรอกข้อมูลให้เสร็จแล้วกดบันทึก ระบบจะรีเฟรชเอง";
+      if(left>0)left--;setTimeout(tick,1000);
+    })();
+  }
+  setInterval(check,18e4);
+  setTimeout(check,1e4);
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)check()});
+  window.addEventListener("focus",check);
+  window.addEventListener("online",check);
+  window.addEventListener("pageshow",check);
+})();
+</script>
 <!-- Preconnect ให้เชื่อมต่อ CDN/ฟอนต์เร็วขึ้น -->
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -34,12 +66,12 @@ if(lastVer !== APP_VERSION){
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <!-- ข้อมูลที่อยู่ไทย (โหลดครั้งเดียว — เดิมโหลดซ้ำ 2 ไฟล์) -->
-<script defer src="thai-addr.js?v=20261025-cf-usage1"></script>
+<script defer src="thai-addr.js?v=20261025-force-update1"></script>
 <!-- แอปหลัก: pre-compiled แล้ว ไม่ต้องใช้ Babel แปลงใน browser อีก -->
 <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script defer src="jt-ui.js?v=20261025-cf-usage1"></script>
-<script defer src="app-dash.bundle.js?v=20261025-cf-usage1"></script>
-<script defer src="sku.js?v=20261025-cf-usage1"></script>
+<script defer src="jt-ui.js?v=20261025-force-update1"></script>
+<script defer src="app-dash.bundle.js?v=20261025-force-update1"></script>
+<script defer src="sku.js?v=20261025-force-update1"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans Thai',sans-serif;background:#f0f2f7}
