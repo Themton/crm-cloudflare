@@ -43,7 +43,7 @@ function crmRenewSession(user){
  return crmSessionRenewal;
 }
 
-async function sbFetch(e,t){
+function __dupMsg(d,blocked){var L=(d.existing||[]).map(function(x){var t=new Date(x.timestamp),ds=isNaN(t.getTime())?'':t.toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});return '• '+ds+' · '+(x.sales_person||'-')+' · '+(x.table==='upsell'?'Upsell':'Order')+' · '+(x.carrier==='jnt'?'J&T':'Flash')+' · '+(x.review?'⚠️ ค้างที่ต้องตรวจสอบ':(x.status||'-'))+(x.tracking?' · '+x.tracking:'')});var list=L.length?'ออเดอร์เดิม:\n'+L.join('\n')+'\n\n':'';return blocked?'🚫 ลงออเดอร์ซ้ำไม่ได้\n\n'+list+'ออเดอร์เดิมยังค้างที่ "ต้องตรวจสอบ" (J&T อาจสร้างเลขไปแล้ว)\nไปที่ จัดส่ง J&T → แท็บ ⚠️ ต้องตรวจสอบ → กด 🚫 ปิดรายการ ก่อน แล้วค่อยลงใหม่':'⚠️ เบอร์นี้มีออเดอร์ภายใน 7 วันแล้ว\n\n'+list+'เฉพาะหัวหน้าและพนักงานจัดส่งสามารถยืนยันลงซ้ำได้\nยืนยันบันทึกออเดอร์ซ้ำหรือไม่?'}async function sbFetch(e,t){
  var a=SUPABASE_URL+'/rest/v1/'+e,n={apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
  try{var sessionRecord=JSON.parse(localStorage.getItem('ps_session')||'null'),currentUser=JSON.parse(localStorage.getItem('ps_user')||'null');if(sessionRecord&&currentUser&&sessionRecord.user.email===currentUser.username)n['x-jt-session']=sessionRecord.session;}catch(_){}
  t&&t.prefer&&(n.Prefer=t.prefer);t&&t.single&&(n.Accept='application/vnd.pgrst.object+json');t&&t.range&&(n.Range=t.range);
@@ -58,7 +58,7 @@ async function sbFetch(e,t){
  }
  if(!o.ok){
   var raw=await o.text(),data;try{data=JSON.parse(raw)}catch(_){}
-  if(o.status===409&&data&&data.code==='DUPLICATE_ORDER_7_DAYS'&&data.can_override===true&&confirm('⚠️ เบอร์นี้มีออเดอร์ภายใน 7 วันแล้ว\n\nเฉพาะหัวหน้าและพนักงานจัดส่งสามารถยืนยันลงซ้ำได้\nยืนยันบันทึกออเดอร์ซ้ำหรือไม่?')){
+  if(o.status===409&&data&&data.code==='DUPLICATE_PENDING_REVIEW'){alert(__dupMsg(data,true));throw new Error(data.error||'ออเดอร์เดิมค้างที่ต้องตรวจสอบ')}if(o.status===409&&data&&data.code==='DUPLICATE_ORDER_7_DAYS'&&data.can_override===true&&confirm(__dupMsg(data,false))){
    n['x-order-duplicate-confirm']='yes';o=await fetch(a,options);
    if(!o.ok){raw=await o.text();try{data=JSON.parse(raw)}catch(_){data=null}throw new Error(data&&data.error||raw);}
   }else throw new Error(data&&data.error||raw);
