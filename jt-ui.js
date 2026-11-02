@@ -81,6 +81,7 @@ function JtShippingPanel(props){
  var totalPages=Math.max(1,Math.ceil(filtered.length/pageSize)),currentPage=Math.min(page,totalPages),shown=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
  var picked=filtered.filter(function(o){return selected[jtRowKey(o)];});
  var creatable=picked.filter(function(o){return (!o._jt||o._jt.state==='ready')&&['รอส่ง','pending'].includes(o.Status)&&!o.TrackingNo;}),printable=picked.filter(function(o){return o._jt&&o._jt.state==='created'&&o.TrackingNo;}),trackable=(picked.length?picked:filtered).filter(function(o){return o._jt&&!o._jt.deleted_at&&!['cancelled','ready','preparing'].includes(o._jt.state);});
+ var waitingList=base.filter(jtAwaitingPickup);
  function toggle(list){var every=list.length>0&&list.every(function(o){return selected[jtRowKey(o)];});setSelected(function(prev){var next=Object.assign({},prev);list.forEach(function(o){next[jtRowKey(o)]=!every;});return next;});}
  function button(label,fn,disabled,color){return h('button',{type:'button',style:Object.assign({},btn,color?{color:color,borderColor:color,background:'#fff'}:{}),disabled:busy||disabled,onClick:fn},label);}
  function act(label,fn,disabled,color){return button(label,function(){run(fn);},disabled,color);}
@@ -96,6 +97,11 @@ function JtShippingPanel(props){
   setProgress({done:i+1,total:list.length});}
   if(merged&&merged.getPageCount()){setPdfUrl(URL.createObjectURL(new Blob([await merged.save()],{type:'application/pdf'})));}
   setResults(out);setProgress(null);setSelected({});setMessage('สำเร็จ '+out.filter(function(r){return r.ok;}).length+' / '+list.length+' รายการ');await reload();
+ }
+ async function syncWaiting(list){var out=[],done=0,idx=0;setResults([]);setProgress({done:0,total:list.length});
+  async function worker(){while(idx<list.length&&MTJT.session){var o=list[idx++];try{var r=await MTJT.call('tracking',ref(o));var st=(r&&(r.carrier_status||r.status||r.stateText))||'';out.push({id:o.OrderID,ok:true,text:st?String(st):'สำเร็จ'});}catch(e){out.push({id:o.OrderID,ok:false,text:jtThaiReason(e.message)});if(!MTJT.session)setLogged(false);}done++;setProgress({done:done,total:list.length});}}
+  var n=Math.min(5,list.length),ws=[];for(var k=0;k<n;k++)ws.push(worker());await Promise.all(ws);
+  setResults(out);setProgress(null);await reload();setMessage('ซิงค์ยังไม่เข้ารับ '+list.length+' รายการ · สำเร็จ '+out.filter(function(r){return r.ok;}).length);
  }
  function download(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(u);},60000);}
  function exportCSV(){var list=picked.length?picked:filtered;var cells=[['ที่มา','วันที่','ออเดอร์','ลูกค้า','เบอร์โทร','ราคา','COD','เลขพัสดุ','สถานะ','สถานะ J&T','รายละเอียดล่าสุด','พนักงาน','สินค้า']].concat(list.map(function(o){return[o._table,jtOrderTime(o.Timestamp),o.OrderID,o.Name,o.MobileNo,o.SalePrice,o.COD,o.TrackingNo,(stages.find(function(s){return s[0]===jtStage(o);})||[])[1],o.FlashStatus,o.FlashDetail,o.SalesPerson,o.Remark];}));var csv='\ufeff'+cells.map(function(row){return row.map(function(v){var s=String(v==null?'':v);if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');download(new Blob([csv],{type:'text/csv;charset=utf-8'}),'jnt-orders.csv');}
@@ -117,7 +123,7 @@ function JtShippingPanel(props){
  h('select',{'aria-label':'ประเภทออเดอร์',style:inp,value:source,onChange:function(e){setSource(e.target.value);}},h('option',{value:'ALL'},'ทั้งหมด'),h('option',{value:'orders'},'📋 Order'),h('option',{value:'upsell'},'🔥 Upsell')),
  h('input',{'aria-label':'ค้นหา',style:inp,placeholder:'🔍 ค้นหา...',value:query,onChange:function(e){setQuery(e.target.value);}}),
  h('input',{'aria-label':'ค้นหาเบอร์โทร',style:inp,placeholder:'📱 ค้นหาเลขพัสดุจากเบอร์...',value:phone,onChange:function(e){setPhone(e.target.value.replace(/[^0-9]/g,''));}}),
- act('🔄 ซิงค์ J&T',function(){return batch('tracking',trackable);},!trackable.length,'#2563eb'),act('📄 ใบ J&T ทางการ',function(){return batch('official-label',printable);},!printable.length),act('โหลดข้อมูลใหม่',reload)),
+ act('⏳ ซิงค์เฉพาะยังไม่เข้ารับ ('+waitingList.length+')',function(){return syncWaiting(waitingList);},!waitingList.length,'#d97706'),act('🔄 ซิงค์ J&T',function(){return batch('tracking',trackable);},!trackable.length,'#2563eb'),act('📄 ใบ J&T ทางการ',function(){return batch('official-label',printable);},!printable.length),act('โหลดข้อมูลใหม่',reload)),
  h('div',{style:Object.assign({},box,{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'})},h('strong',null,shop?'ร้าน: '+shop.name:'⚠️ ยังไม่ได้ตั้งค่าร้านเริ่มต้น'),shop&&h('span',{style:{fontSize:12,color:'#64748b'}},shop.customerCode+' · '+shop.sender.sender_name),h('label',null,'น้ำหนัก (กก.) ',h('input',{type:'number',min:0.001,max:100,step:0.001,style:Object.assign({},inp,{width:90}),value:weight,disabled:busy,onChange:function(e){setWeight(e.target.value);}})),h('label',null,'ตั้งแต่ ',h('input',{type:'date',style:inp,value:dateFrom,onChange:function(e){setDateFrom(e.target.value);}})),h('label',null,'ถึง ',h('input',{type:'date',style:inp,value:dateTo,onChange:function(e){setDateTo(e.target.value);}})),canManage&&h('details',{style:{width:'100%'}},h('summary',{style:{cursor:'pointer',fontWeight:600}},'⚙️ ตั้งค่าร้าน (เฉพาะแอดมิน)'),h(JtShopSettings,{config:config,onSaved:reload}))),
  message&&h('div',{role:'status',style:Object.assign({},box,{color:'#9a3412',background:'#fff7ed'})},jtThaiReason(message)),
  progress&&h('div',{role:'status',style:box},'กำลังทำรายการ '+progress.done+' / '+progress.total,h('progress',{value:progress.done,max:progress.total,style:{width:'100%'}})),
